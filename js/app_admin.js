@@ -248,6 +248,27 @@ async function confirmDelete(id, n1, n2) {
  * Carga los datos de una ficha en el editor del terapeuta
  * @param {string} id - ID de la sesión.
  */
+/**
+ * Bloquea o desbloquea los campos demográficos y número de sesión para edición
+ */
+function setDemographicsEditable(editable) {
+  const fields = ['n1', 'n2', 'a1', 'a2', 'rel', 'est', 'hij', 'ns'];
+  fields.forEach(f => {
+    const el = document.getElementById(f);
+    if (el) {
+      if (editable) {
+        el.removeAttribute("readonly");
+        el.removeAttribute("disabled");
+      } else {
+        el.setAttribute("readonly", "true");
+        if (el.tagName === "SELECT") {
+          el.setAttribute("disabled", "true");
+        }
+      }
+    }
+  });
+}
+
 async function loadSessionEditor(id) {
   const allSess = await fetchAllSessions(verifiedPassword);
   const session = allSess.find(s => s.id === id);
@@ -266,6 +287,10 @@ async function loadSessionEditor(id) {
       el.value = activeSession[f] !== undefined ? activeSession[f] : "";
     }
   });
+
+  // Si la sesión es Pendiente, permitir editar datos demográficos. Si es Completado, bloquearlos.
+  const isPending = activeSession.status === "Pendiente";
+  setDemographicsEditable(isPending);
 
   // Cargar y renderizar preguntas dinámicas
   activeSession.questions = getSessionQuestions(activeSession);
@@ -316,6 +341,8 @@ async function loadSessionEditor(id) {
  * Cancela la edición y vuelve al listado
  */
 function cancelForm() {
+  // Asegurar que los campos vuelvan a ser editables por defecto
+  setDemographicsEditable(true);
   document.getElementById("wizard-section").style.display = "none";
   document.getElementById("dashboard-section").style.display = "block";
   loadAdminDashboard();
@@ -676,6 +703,9 @@ async function createNewSessionFromExisting(id) {
   document.querySelectorAll("#sc1 .snum").forEach(s => {
     s.classList.remove("on");
   });
+
+  // Bloquear edición de datos demográficos y número de sesión
+  setDemographicsEditable(false);
 
   // Cargar y renderizar preguntas dinámicas vacías
   renderQuestions();

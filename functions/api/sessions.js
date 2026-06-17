@@ -78,21 +78,24 @@ export async function onRequest(context) {
   if (method === "POST") {
     try {
       const body = await request.json();
-      
-      // Si se está editando una sesión existente (tiene ID), requerir autenticación
-      if (body.id) {
-        const authHeader = request.headers.get("Authorization");
-        if (authHeader !== ADMIN_PASSWORD) {
+      const authHeader = request.headers.get("Authorization");
+      const isAdmin = authHeader === ADMIN_PASSWORD;
+
+      if (!body.id) {
+        // Generar un ID único para la nueva ficha clínica
+        body.id = "session_" + Date.now();
+        // Si no es el administrador (es un paciente), forzar el estado en "Pendiente"
+        if (!isAdmin) {
+          body.status = "Pendiente";
+        }
+      } else {
+        // Si se está editando una sesión existente (tiene ID), requerir autenticación
+        if (!isAdmin) {
           return new Response(
             JSON.stringify({ error: "No autorizado para editar registros clínicos." }),
             { status: 401, headers: corsHeaders }
           );
         }
-      } else {
-        // Generar un ID único para la nueva ficha clínica enviada por el paciente
-        body.id = "session_" + Date.now();
-        // Por defecto, lo enviado por el paciente está en estado "Pendiente"
-        body.status = "Pendiente";
       }
 
       // Guardar en la base de datos KV de Cloudflare (clave: session_<id>)
