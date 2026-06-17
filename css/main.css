@@ -1,0 +1,244 @@
+/* Global Resets & Theme Setup */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-primary);
+  background-color: var(--bg-cream);
+  color: var(--text-main);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  padding: 2rem 1rem;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* Base Wrapper */
+.app-container {
+  width: 100%;
+  max-width: 960px;
+  background-color: var(--bg-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Header Design - Premium & Modern */
+.header {
+  background: linear-gradient(135deg, var(--sage-main) 0%, var(--sage-dark) 100%);
+  padding: 2rem 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+}
+
+.header::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.logo-circle {
+  width: 68px;
+  height: 68px;
+  background: var(--bg-white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  flex-shrink: 0;
+  transform: scale(1);
+  transition: transform var(--transition-smooth);
+}
+
+.logo-circle:hover {
+  transform: scale(1.05) rotate(5deg);
+}
+
+.header-text {
+  color: var(--text-white);
+  z-index: 1;
+}
+
+.header-text h1 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.header-text p {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  margin-top: 0.25rem;
+  font-weight: 400;
+}
+
+.brand-tag {
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-round);
+  padding: 0.25rem 0.75rem;
+  margin-top: 0.5rem;
+  display: inline-block;
+  color: var(--text-white);
+  font-weight: 500;
+  backdrop-filter: blur(4px);
+}
+
+/* Nav tabs / Stepper */
+.stepper {
+  display: flex;
+  background-color: var(--bg-white);
+  border-bottom: 1px solid var(--border-light);
+  overflow-x: auto;
+  padding: 0 1rem;
+  scrollbar-width: none; /* Firefox */
+}
+
+.stepper::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+
+.step {
+  flex: 1;
+  min-width: 110px;
+  padding: 1.25rem 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all var(--transition-smooth);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  position: relative;
+}
+
+.step.active {
+  border-bottom-color: var(--sage-main);
+  color: var(--sage-dark);
+  font-weight: 700;
+}
+
+.step i {
+  font-size: 1.35rem;
+  transition: transform var(--transition-fast);
+}
+
+.step:hover i {
+  transform: translateY(-2px);
+}
+
+.step.done {
+  color: var(--teal-main);
+}
+
+.step.done::after {
+  content: '✓';
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 9px;
+  background-color: var(--teal-main);
+  color: white;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Navigation Indicator Bar */
+.progress-track {
+  height: 6px;
+  background-color: var(--sage-light);
+  width: 100%;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--sage-main), var(--teal-main));
+  width: 20%;
+  transition: width var(--transition-smooth);
+}
+
+/* Main Body Area */
+.body-content {
+  background-color: var(--bg-white);
+  padding: 2.5rem;
+  min-height: 480px;
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  body {
+    padding: 0;
+  }
+  
+  .app-container {
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+
+  .header {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .body-content {
+    padding: 1.5rem 1.25rem;
+  }
+}

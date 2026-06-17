@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Color Palette - Premium Calming Psychology Theme */
+  --font-primary: 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Outfit', sans-serif;
+
+  /* Neutrals */
+  --bg-cream: #fafbfc;
+  --bg-white: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.75);
+  
+  /* Primary - Sage Green (Calm, Healing, Balance) */
+  --sage-main: #628266;
+  --sage-hover: #4d6951;
+  --sage-light: #f1f6f2;
+  --sage-mid: #b3c9b6;
+  --sage-dark: #374f3b;
+  
+  /* Secondary - Soft Teal (Mindfulness, Serenity) */
+  --teal-main: #4a9e9a;
+  --teal-hover: #377c78;
+  --teal-light: #eef8f7;
+  --teal-mid: #a3d2cf;
+  --teal-dark: #235250;
+  
+  /* Accent - Muted Terracotta (Active engagement, warmth) */
+  --terracotta-main: #d97d54;
+  --terracotta-hover: #bd633c;
+  --terracotta-light: #fef4f0;
+  --terracotta-dark: #8e4220;
+
+  /* Alerts */
+  --success: #2d6a4f;
+  --success-bg: #e6f4ea;
+  --warning: #b7791f;
+  --warning-bg: #fffaf0;
+  --danger: #a32d2d;
+  --danger-bg: #fde8e8;
+
+  /* Typography Colors */
+  --text-main: #2b3a2d;
+  --text-muted: #536b56;
+  --text-light: #809c84;
+  --text-white: #ffffff;
+
+  /* Structural Details */
+  --border-light: #e3ebe4;
+  --border-focus: #628266;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(98, 130, 102, 0.04);
+  --shadow-md: 0 8px 20px rgba(98, 130, 102, 0.08);
+  --shadow-lg: 0 16px 36px rgba(98, 130, 102, 0.12);
+  --shadow-glass: 0 8px 32px 0 rgba(98, 130, 102, 0.05);
+
+  /* Borders & Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-round: 30px;
+  
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

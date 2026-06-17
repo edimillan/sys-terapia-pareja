@@ -1,0 +1,36 @@
+PLAN DE TRABAJO: FICHA CLÍNICA DE TERAPIA DE PAREJA (Salud Mental 360 & TeAcompaño)
+
+Hola! Te presento el plan de implementación para la nueva versión de la Ficha de Terapia de Pareja. El proyecto se creará con una estructura profesional y limpia en la carpeta de descargas del terapeuta.
+
+1. OBJETIVO DEL PROYECTO
+Modernizar la ficha clínica interactiva para que funcione de manera autónoma, con almacenamiento local en formato JSON (Base de Datos en el navegador), permitiendo buscar, editar, eliminar y descargar sesiones clínicas previas, además de exportar reportes en PDF y Excel profesionales.
+
+2. ESTRUCTURA DE ARCHIVOS (Super Ordenado)
+- index.html (Dashboard de control + Ficha interactiva de pasos)
+- css/
+  - variables.css (Paleta de colores premium: Sage Green, Teal, Slate y Cream)
+  - main.css (Distribución y animaciones fluidas)
+  - components.css (Formularios, botones, escalas de valoración y tabla de historial)
+- js/
+  - db.js (Base de datos local: Guardar, Editar, Eliminar e Importar/Exportar base de datos JSON)
+  - export.js (Generador de Informe PDF y Planilla Excel)
+  - app.js (Control de navegación por pestañas y cálculos de tiempo automáticos)
+- js/
+  - db.js (Base de datos local: Guardar, Editar, Eliminar e Importar/Exportar base de datos JSON)
+  - export.js (Generador de Informe PDF y Planilla Excel)
+  - app.js (Control de navegación por pestañas y cálculos de tiempo automáticos)
+- data/
+  - sessions_template.json (Fichas clínicas de ejemplo precargadas)
+
+3. NUEVAS FUNCIONALIDADES PRINCIPALES
+- Dashboard / Historial Clínico: Una pantalla inicial para ver todas las sesiones guardadas, filtrar por nombres de pacientes, fecha o terapeuta, y cargarlas con un solo clic.
+- Base de datos en JSON: Opción de "Exportar Respaldo de Base de Datos" (guarda todas las sesiones en un archivo .json) y "Importar Respaldo" para restaurar las fichas en cualquier computadora.
+- Gestión de Tiempo Dinámica: Gráfico de barras interactivo que se actualiza en tiempo real según los minutos dedicados a cada bloque de la sesión clínica.
+- Exportación Premium:
+  * PDF: Diseño limpio y elegante con el logo de Salud Mental 360 & TeAcompaño.
+  * Excel: Tabla ordenada de dos pestañas (Ficha Completa y Resumen Rápido).
+  * Prompts de IA: Generador de texto para copiar y pegar en modelos de IA para obtener recomendaciones terapéuticas basadas en la sesión.
+
+4. DISEÑO Y ESTÉTICA (Premium)
+- Paleta relaxing: Colores ideales para salud mental (verde salvia, crema y turquesa oscuro).
+- Diseño responsivo y moderno: Tarjetas tipo "glassmorphism", tipografía Inter, y transiciones suaves entre cada sección del formulario.

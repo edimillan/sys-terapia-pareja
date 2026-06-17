@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Clínico — Administración de Sesiones</title>
+  
+  <!-- Iconos de Tabler -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+  
+  <!-- Librerías Externas para Reportes -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <!-- Hojas de Estilo del Proyecto -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+
+  <!-- Accesibilidad / SEO -->
+  <h2 style="position: absolute; left: -9999px;">Administración de Sesiones Clínicas — Salud Mental 360</h2>
+
+  <div class="app-container">
+    
+    <!-- ──────────────── PANTALLA DE AUTENTICACIÓN (LOGIN) ──────────────── -->
+    <div id="login-section" class="body-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 2rem; gap: 1.5rem; text-align: center;">
+      <div class="logo-circle" style="width: 76px; height: 76px; background-color: var(--sage-light); color: var(--sage-main); font-size: 2.2rem; display: flex; align-items: center; justify-content: center;">
+        <i class="ti ti-lock"></i>
+      </div>
+      <div>
+        <h2 style="font-family: var(--font-display); color: var(--sage-dark); font-size: 1.6rem; font-weight: 700;">Acceso Clínico Administrativo</h2>
+        <p style="color: var(--text-light); font-size: 0.85rem; margin-top: 0.25rem;">Salud Mental 360 · TeAcompaño</p>
+      </div>
+      <div class="field" style="width: 100%; max-width: 320px; margin-top: 1rem;">
+        <label class="lbl" for="admin-pass"><i class="ti ti-key"></i> Clave de Acceso</label>
+        <input type="password" id="admin-pass" placeholder="Ingrese clave..." onkeydown="if(event.key === 'Enter') loginAdmin()">
+      </div>
+      <button class="btn btn-sage" style="width: 100%; max-width: 320px; padding: 0.85rem;" onclick="loginAdmin()">
+        Ingresar al Portal <i class="ti ti-login"></i>
+      </button>
+      <div id="login-error" style="color: var(--danger); font-size: 0.8rem; font-weight: 600; display: none;">
+        ⚠️ Clave incorrecta. Por favor intente de nuevo.
+      </div>
+    </div>
+
+    <!-- ──────────────── PORTAL ADMINISTRATIVO (DASHBOARD) ──────────────── -->
+    <div id="dashboard-section" class="body-content dashboard-view" style="display: none;">
+      
+      <!-- Encabezado Clínico del Admin -->
+      <div class="header" style="margin: -2.5rem -2.5rem 2rem; border-radius: 0;">
+        <div class="logo-circle">
+          <svg width="46" height="46" viewBox="0 0 38 38" aria-hidden="true">
+            <circle cx="19" cy="19" r="19" fill="#fff"/>
+            <ellipse cx="14" cy="14" rx="6" ry="8" fill="#4a9e9a" transform="rotate(-10,14,14)"/>
+            <ellipse cx="24" cy="14" rx="6" ry="8" fill="#d97d54" transform="rotate(10,24,14)"/>
+            <path d="M19 30 C19 30 9 23 9 17 C9 14 11.5 12 14 12 C16 12 18 13.5 19 15.5 C20 13.5 22 12 24 12 C26.5 12 29 14 29 17 C29 23 19 30 19 30Z" fill="#fff" opacity="0.95"/>
+          </svg>
+        </div>
+        <div class="header-text">
+          <h1>Panel de Gestión Clínica</h1>
+          <p>Revisión de ingresos, edición y descargas de reportes</p>
+          <span class="brand-tag">Salud Mental 360 · TeAcompaño Centro Psicológico</span>
+        </div>
+      </div>
+
+      <div class="db-controls">
+        <div class="search-bar">
+          <i class="ti ti-search"></i>
+          <input type="text" id="db-search" placeholder="Buscar pacientes o fechas..." oninput="filterSessions()">
+        </div>
+        <div class="db-actions">
+          <button class="btn btn-sage" onclick="openShareModal()">
+            <i class="ti ti-share"></i> Enviar Enlace de Ingreso
+          </button>
+          <button class="btn" onclick="triggerDatabaseExport()" title="Exportar Copia de Seguridad JSON">
+            <i class="ti ti-download"></i> Respaldar BD
+          </button>
+          <button class="btn" onclick="triggerImportClick()" title="Restaurar Copia de Seguridad JSON">
+            <i class="ti ti-upload"></i> Importar BD
+          </button>
+          <input type="file" id="import-file" accept=".json" style="display: none;">
+          <button class="btn btn-danger" onclick="logoutAdmin()" title="Cerrar Sesión">
+            <i class="ti ti-logout"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- SECCIÓN A: FICHAS DE INGRESO PENDIENTES (ENVIADAS POR PACIENTES) -->
+      <div class="section-pill" style="margin-top: 1rem;">
+        <i class="ti ti-mailbox"></i>
+        <span>Fichas de Ingreso Recibidas (Pendientes)</span>
+      </div>
+      <div class="table-wrapper" style="margin-bottom: 2rem;">
+        <table class="sessions-table">
+          <thead>
+            <tr>
+              <th style="width: 40%;">Pareja Atendida</th>
+              <th style="width: 25%;">Fecha de Envío</th>
+              <th style="width: 20%; text-align: center;">Estado</th>
+              <th style="width: 15%;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="pending-tbody">
+            <!-- Cargado dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- SECCIÓN B: HISTORIAL CLÍNICO COMPLETADO -->
+      <div class="section-pill">
+        <i class="ti ti-archive"></i>
+        <span>Historial Clínico (Sesiones Completadas)</span>
+      </div>
+      <div class="table-wrapper">
+        <table class="sessions-table">
+          <thead>
+            <tr>
+              <th style="width: 30%;">Pareja Atendida</th>
+              <th style="width: 15%;">Fecha</th>
+              <th style="width: 15%; text-align: center;">N° Sesión</th>
+              <th style="width: 20%;">Terapeuta</th>
+              <th style="width: 10%;">Frecuencia</th>
+              <th style="width: 10%;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="completed-tbody">
+            <!-- Cargado dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- ──────────────── ASISTENTE / EDITOR CLÍNICO COMPLETO ──────────────── -->
+    <div id="wizard-section" style="display: none;">
+      
+      <!-- Stepper / Navegador de Pasos (5 Pasos Administrativos) -->
+      <div class="stepper" id="stepper">
+        <div class="step active" onclick="go(0)"><i class="ti ti-users"></i>Pareja</div>
+        <div class="step" onclick="go(1)"><i class="ti ti-alert-circle"></i>Motivo</div>
+        <div class="step" onclick="go(2)"><i class="ti ti-message-dots"></i>Sesión</div>
+        <div class="step" onclick="go(3)"><i class="ti ti-clock"></i>Tiempo</div>
+        <div class="step" onclick="go(4)"><i class="ti ti-clipboard-check"></i>Resumen</div>
+      </div>
+
+      <!-- Barra de progreso superior -->
+      <div class="progress-track">
+        <div class="progress-fill" id="prog" style="width: 20%;"></div>
+      </div>
+
+      <!-- Contenedor del Formulario -->
+      <div class="body-content">
+        
+        <!-- ── PASO 0: DATOS DE LA PAREJA ── -->
+        <div class="page active" id="p0">
+          <div class="section-pill"><i class="ti ti-users"></i><span>Datos de la Pareja</span></div>
+          
+          <div class="grid2">
+            <div class="field">
+              <label class="lbl" for="n1"><i class="ti ti-user"></i> Nombre completo — Integrante 1</label>
+              <input type="text" id="n1" placeholder="Ej. Carlos Mendoza">
+            </div>
+            <div class="field">
+              <label class="lbl" for="n2"><i class="ti ti-user"></i> Nombre completo — Integrante 2</label>
+              <input type="text" id="n2" placeholder="Ej. Mariana Gómez">
+            </div>
+          </div>
+          
+          <div class="grid2">
+            <div class="field">
+              <label class="lbl" for="a1"><i class="ti ti-number"></i> Edad Integrante 1</label>
+              <input type="number" id="a1" placeholder="Ej. 34" min="18">
+            </div>
+            <div class="field">
+              <label class="lbl" for="a2"><i class="ti ti-number"></i> Edad Integrante 2</label>
+              <input type="number" id="a2" placeholder="Ej. 31" min="18">
+            </div>
+          </div>
+          
+          <div class="grid2">
+            <div class="field">
+              <label class="lbl" for="rel"><i class="ti ti-calendar-time"></i> Tiempo de relación</label>
+              <input type="text" id="rel" placeholder="Ej. 5 años">
+            </div>
+            <div class="field">
+              <label class="lbl" for="est"><i class="ti ti-heart-handshake"></i> Estado civil</label>
+              <select id="est">
+                <option value="">Seleccionar</option>
+                <option value="Convivientes">Convivientes</option>
+                <option value="Casados">Casados</option>
+                <option value="Novios">Novios</option>
+                <option value="Separados en proceso">Separados en proceso</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="grid2">
+            <div class="field">
+              <label class="lbl" for="hij"><i class="ti ti-gender-parently"></i> ¿Tienen hijos?</label>
+              <select id="hij">
+                <option value="">Seleccionar</option>
+                <option value="No">No</option>
+                <option value="Sí, 1">Sí, 1</option>
+                <option value="Sí, 2">Sí, 2</option>
+                <option value="Sí, 3 o más">Sí, 3 o más</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="lbl" for="ns"><i class="ti ti-list-numbers"></i> N° de sesión</label>
+              <input type="number" id="ns" value="1" min="1">
+            </div>
+          </div>
+          
+          <div class="grid2">
+            <div class="field">
+              <label class="lbl" for="fec"><i class="ti ti-calendar"></i> Fecha de sesión</label>
+              <input type="date" id="fec">
+            </div>
+            <div class="field">
+              <label class="lbl" for="ter"><i class="ti ti-certificate"></i> Terapeuta a cargo</label>
+              <input type="text" id="ter" placeholder="Ej. Dra. Sofía Ramírez">
+            </div>
+          </div>
+          
+          <div class="btn-row">
+            <button class="btn btn-danger" onclick="cancelForm()">
+              <i class="ti ti-x"></i> Volver al Historial
+            </button>
+            <button class="btn btn-sage" onclick="go(1)">
+              Continuar <i class="ti ti-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ── PASO 1: MOTIVO DE CONSULTA ── -->
+        <div class="page" id="p1">
+          <div class="section-pill"><i class="ti ti-alert-circle"></i><span>Motivos y Conflicto</span></div>
+          
+          <div class="grid1">
+            <div class="field">
+              <label class="lbl" for="m1"><i class="ti ti-message"></i> Perspectiva e inquietud — Integrante 1</label>
+              <textarea id="m1" placeholder="¿Qué la/lo trae a terapia hoy desde su perspectiva?"></textarea>
+            </div>
+            <div class="field">
+              <label class="lbl" for="m2"><i class="ti ti-message"></i> Perspectiva e inquietud — Integrante 2</label>
+              <textarea id="m2" placeholder="¿Qué la/lo trae a terapia hoy desde su perspectiva?"></textarea>
+            </div>
+          </div>
+          
+          <div class="divider"></div>
+          
+          <div class="field">
+            <label class="lbl"><i class="ti ti-tags"></i> Áreas de conflicto identificadas por el profesional</label>
+            <div class="tag-wrap" id="areas">
+              <span class="tag" onclick="tog(this)">Comunicación</span>
+              <span class="tag" onclick="tog(this)">Infidelidad</span>
+              <span class="tag" onclick="tog(this)">Sexualidad</span>
+              <span class="tag" onclick="tog(this)">Crianza</span>
+              <span class="tag" onclick="tog(this)">Economía</span>
+              <span class="tag" onclick="tog(this)">Distancia emocional</span>
+              <span class="tag" onclick="tog(this)">Violencia verbal</span>
+              <span class="tag" onclick="tog(this)">Roles en el hogar</span>
+              <span class="tag" onclick="tog(this)">Familia de origen</span>
+              <span class="tag" onclick="tog(this)">Celos</span>
+              <span class="tag" onclick="tog(this)">Duelo / pérdidas</span>
+              <span class="tag" onclick="tog(this)">Problemas laborales</span>
+              <span class="tag" onclick="tog(this)">Otro</span>
+            </div>
+          </div>
+          
+          <div class="divider"></div>
+          
+          <div class="grid2">
+            <div class="field">
+              <label class="lbl" for="dur"><i class="ti ti-hourglass-low"></i> Duración estimada del conflicto</label>
+              <select id="dur">
+                <option value="">Seleccionar</option>
+                <option value="Menos de 3 meses">Menos de 3 meses</option>
+                <option value="3–6 meses">3–6 meses</option>
+                <option value="6–12 meses">6–12 meses</option>
+                <option value="1–3 años">1–3 años</option>
+                <option value="Más de 3 años">Más de 3 años</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="lbl" for="prev"><i class="ti ti-history"></i> Proceso de terapia de pareja previo</label>
+              <select id="prev">
+                <option value="">Seleccionar</option>
+                <option value="No">No</option>
+                <option value="Sí, como pareja">Sí, como pareja</option>
+                <option value="Sí, individual">Sí, individual</option>
+                <option value="Ambas modalidades">Ambas modalidades</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="field" style="margin-top: 0.75rem;">
+            <label class="lbl"><i class="ti ti-heart-rate-monitor"></i> Nivel de compromiso actual percibido con la relación (Ambos)</label>
+            <div class="scale-wrap" id="sc1">
+              <span class="snum" onclick="scl('sc1', this)">1</span>
+              <span class="snum" onclick="scl('sc1', this)">2</span>
+              <span class="snum" onclick="scl('sc1', this)">3</span>
+              <span class="snum" onclick="scl('sc1', this)">4</span>
+              <span class="snum" onclick="scl('sc1', this)">5</span>
+              <span class="snum" onclick="scl('sc1', this)">6</span>
+              <span class="snum" onclick="scl('sc1', this)">7</span>
+              <span class="snum" onclick="scl('sc1', this)">8</span>
+              <span class="snum" onclick="scl('sc1', this)">9</span>
+              <span class="snum" onclick="scl('sc1', this)">10</span>
+            </div>
+            <div class="scale-lbl">
+              <span>Sin intención de continuar</span>
+              <span>Totalmente comprometidos en reparar</span>
+            </div>
+          </div>
+          
+          <div class="btn-row">
+            <button class="btn" onclick="go(0)"><i class="ti ti-arrow-left"></i> Atrás</button>
+            <button class="btn btn-sage" onclick="go(2)">Continuar <i class="ti ti-arrow-right"></i></button>
+          </div>
+        </div>
+
+        <!-- ── PASO 2: PREGUNTAS CLAVE & SECCIÓN INTERNA ── -->
+        <div class="page" id="p2">
+          <div class="section-pill"><i class="ti ti-message-dots"></i><span>Respuestas e Intervención Interna</span></div>
+          
+          <!-- Preguntas llenadas por la pareja -->
+          <div class="q-card">
+            <div class="q-label"><i class="ti ti-target-arrow"></i> ¿Qué esperan lograr activamente al venir a terapia?</div>
+            <textarea id="q1" placeholder="Respuestas del paciente..."></textarea>
+          </div>
+          
+          <div class="q-card">
+            <div class="q-label"><i class="ti ti-hourglass-empty"></i> ¿Cuándo fue el último periodo donde se sintieron bien en pareja?</div>
+            <textarea id="q2" placeholder="Respuestas del paciente..."></textarea>
+          </div>
+          
+          <div class="q-card">
+            <div class="q-label"><i class="ti ti-arrows-double-ne-sw"></i> ¿Cómo suelen manejar el conflicto? (¿Quién persigue y quién se distancia?)</div>
+            <textarea id="q3" placeholder="Respuestas del paciente..."></textarea>
+          </div>
+          
+          <div class="q-card">
+            <div class="q-label"><i class="ti ti-viewfinder"></i> ¿Qué sienten que la otra persona no logra entender de ustedes?</div>
+            <textarea id="q4" placeholder="Respuestas del paciente..."></textarea>
+          </div>
+          
+          <div class="q-card">
+            <div class="q-label"><i class="ti ti-heart-filled"></i> ¿Qué cosas positivas los mantienen unidos aún hoy?</div>
+            <textarea id="q5" placeholder="Respuestas del paciente..."></textarea>
+          </div>
+          
+          <div class="divider"></div>
+          
+          <!-- SECCIÓN INTERNA PARA EL TERAPEUTA -->
+          <div class="section-pill" style="background-color: var(--teal-light); border-color: rgba(74, 158, 154, 0.2);">
+            <i class="ti ti-lock" style="color: var(--teal-main);"></i>
+            <span style="color: var(--teal-dark);">Sección Interna Clínica (Administrativo)</span>
+          </div>
+
+          <div class="field">
+            <label class="lbl"><i class="ti ti-tool"></i> Enfoque / Técnica terapéutica predominante en la sesión</label>
+            <div class="tag-wrap" id="enf">
+              <span class="tag teal" onclick="tog(this)">Gottman</span>
+              <span class="tag teal" onclick="tog(this)">Terapia Focalizada en Emociones (EFT)</span>
+              <span class="tag teal" onclick="tog(this)">TCC de Pareja</span>
+              <span class="tag teal" onclick="tog(this)">Sistémico familiar</span>
+              <span class="tag teal" onclick="tog(this)">Narrativo</span>
+              <span class="tag teal" onclick="tog(this)">Gestalt</span>
+              <span class="tag teal" onclick="tog(this)">Psicodinámico</span>
+              <span class="tag teal" onclick="tog(this)">Técnicas de Escucha Activa</span>
+            </div>
+          </div>
+          
+          <div class="grid1" style="margin-top: 1.25rem;">
+            <div class="field">
+              <label class="lbl" for="obs"><i class="ti ti-eye"></i> Observaciones clínicas y conducta no verbal</label>
+              <textarea id="obs" placeholder="Registro de gestos, cruces de miradas, defensividad, llanto, dinamismo de la sesión..."></textarea>
+            </div>
+            <div class="field">
+              <label class="lbl" for="tar"><i class="ti ti-notes"></i> Tarea terapéutica asignada para el hogar</label>
+              <textarea id="tar" placeholder="Ej. Ejercicio de la caja de sugerencias, 10 min de apreciación diaria..."></textarea>
+            </div>
+          </div>
+          
+          <div class="btn-row">
+            <button class="btn" onclick="go(1)"><i class="ti ti-arrow-left"></i> Atrás</button>
+            <button class="btn btn-sage" onclick="go(3)">Continuar <i class="ti ti-arrow-right"></i></button>
+          </div>
+        </div>
+
+        <!-- ── PASO 3: GESTIÓN DEL TIEMPO CLÍNICO ── -->
+        <div class="page" id="p3">
+          <div class="section-pill"><i class="ti ti-clock"></i><span>Gestión y Bloques de Tiempo</span></div>
+          
+          <div class="grid2">
+            <div class="field">
+              <label class="lbl" for="dtot"><i class="ti ti-hourglass"></i> Duración total pactada (min)</label>
+              <input type="number" id="dtot" value="60" min="30" max="180" oninput="calcT()">
+            </div>
+            <div class="field">
+              <label class="lbl" for="hi"><i class="ti ti-player-play"></i> Hora de inicio de la sesión</label>
+              <input type="time" id="hi" value="09:00" oninput="calcT()">
+            </div>
+          </div>
+          
+          <div class="divider"></div>
+          <p style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.4px;">
+            Distribución por bloques clínicos
+          </p>
+          
+          <div class="grid2">
+            <div class="field">
+              <label class="lbl" for="t1">
+                <span style="display: inline-block; width: 10px; height: 10px; background-color: var(--sage-main); border-radius: 3px; margin-right: 4px;"></span>
+                Bloque 1: Apertura, encuadre y revisión (min)
+              </label>
+              <input type="number" id="t1" value="10" min="0" oninput="calcT()">
+            </div>
+            <div class="field">
+              <label class="lbl" for="t2">
+                <span style="display: inline-block; width: 10px; height: 10px; background-color: var(--terracotta-main); border-radius: 3px; margin-right: 4px;"></span>
+                Bloque 2: Exploración del conflicto / desahogo (min)
+              </label>
+              <input type="number" id="t2" value="20" min="0" oninput="calcT()">
+            </div>
+            <div class="field">
+              <label class="lbl" for="t3">
+                <span style="display: inline-block; width: 10px; height: 10px; background-color: var(--teal-main); border-radius: 3px; margin-right: 4px;"></span>
+                Bloque 3: Intervención clínica activa (min)
+              </label>
+              <input type="number" id="t3" value="20" min="0" oninput="calcT()">
+            </div>
+            <div class="field">
+              <label class="lbl" for="t4">
+                <span style="display: inline-block; width: 10px; height: 10px; background-color: var(--sage-mid); border-radius: 3px; margin-right: 4px;"></span>
+                Bloque 4: Cierre, feedback y tareas (min)
+              </label>
+              <input type="number" id="t4" value="10" min="0" oninput="calcT()">
+            </div>
+          </div>
+          
+          <!-- Contenedor del gráfico y cálculo de tiempos dinámico -->
+          <div id="tresult"></div>
+          
+          <div class="divider"></div>
+          
+          <div class="grid2">
+            <div class="field">
+              <label class="lbl" for="prox"><i class="ti ti-calendar-event"></i> Fecha de próxima sesión</label>
+              <input type="date" id="prox">
+            </div>
+            <div class="field">
+              <label class="lbl" for="frec"><i class="ti ti-arrows-repeat"></i> Frecuencia acordada</label>
+              <select id="frec">
+                <option value="Semanal">Semanal</option>
+                <option value="Quincenal">Quincenal</option>
+                <option value="Mensual">Mensual</option>
+                <option value="A demanda">A demanda / Variable</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="btn-row">
+            <button class="btn" onclick="go(2)"><i class="ti ti-arrow-left"></i> Atrás</button>
+            <button class="btn btn-sage" onclick="go(4)">
+              Ver Resumen <i class="ti ti-clipboard-check"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ── PASO 4: RESUMEN Y EXPORTACIÓN CLÍNICA ── -->
+        <div class="page" id="p4">
+          <div class="section-pill"><i class="ti ti-clipboard-check"></i><span>Resumen y Descarga</span></div>
+          
+          <!-- Contenedor dinámico del resumen -->
+          <div id="sumcont"></div>
+          
+          <!-- Panel de Exportaciones a Archivos Externos -->
+          <div class="download-panel">
+            <div class="download-panel-title">
+              <i class="ti ti-download"></i> Exportación de Documentación
+            </div>
+            <div class="download-panel-sub">
+              Descargue el informe clínico oficial en formato PDF listo para imprimir o guardar en su expediente digital.
+            </div>
+            <div class="download-btns">
+              <button class="download-btn dbtn-pdf" style="max-width: 280px;" onclick="downloadPDF()">
+                <i class="ti ti-file-type-pdf" style="font-size: 24px; flex-shrink: 0;"></i>
+                <div class="dbtn-label">
+                  <span class="dbtn-main">Descargar PDF</span>
+                  <span class="dbtn-desc">Informe clínico de 2 páginas</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div class="btn-row" style="justify-content: space-between;">
+            <div>
+              <button class="btn" onclick="go(3)"><i class="ti ti-edit"></i> Corregir datos</button>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn" onclick="cancelForm()"><i class="ti ti-arrow-back-up"></i> Cancelar</button>
+              <button class="btn btn-teal" onclick="copyAIPrompt()">
+                Copiar Prompt IA <i class="ti ti-sparkles"></i>
+              </button>
+              <button class="btn btn-sage" onclick="saveActiveSession()">
+                Finalizar y Guardar Sesión <i class="ti ti-device-floppy"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ──────────────── MODAL / EMERGENTE PARA COMPARTIR ENLACES ──────────────── -->
+    <div id="share-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+      <div class="app-container" style="max-width: 500px; background-color: white; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); overflow: hidden; animation: slideUp 0.3s ease-out;">
+        <div class="header" style="padding: 1.25rem 1.5rem;">
+          <div class="header-text">
+            <h2 style="font-family: var(--font-display); color: white; font-size: 1.2rem; font-weight: 700; border-bottom: none; margin-bottom: 0; padding-bottom: 0;">Enviar Invitación de Ingreso</h2>
+            <p style="color: rgba(255,255,255,0.85); font-size: 0.8rem; margin-top: 2px;">Generar enlace y mensaje para la pareja</p>
+          </div>
+        </div>
+        <div class="body-content" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+          <div class="field">
+            <label class="lbl" for="share-couple-name"><i class="ti ti-users"></i> Nombre de la pareja (Ej. Carlos y Mariana)</label>
+            <input type="text" id="share-couple-name" placeholder="Ej. Carlos y Mariana" oninput="updateShareLinks()">
+          </div>
+          <div class="field">
+            <label class="lbl" for="share-therapist-name"><i class="ti ti-certificate"></i> Tu nombre (Terapeuta)</label>
+            <input type="text" id="share-therapist-name" placeholder="Ej. Dra. Sofía Ramírez" oninput="updateShareLinks()">
+          </div>
+          
+          <div class="divider" style="margin: 0.5rem 0;"></div>
+          
+          <div style="background-color: var(--sage-light); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 0.85rem; font-size: 0.8rem; color: var(--sage-dark); line-height: 1.5;">
+            <p style="font-weight: 700; margin-bottom: 4px;">Vista previa del mensaje:</p>
+            <p id="share-message-preview" style="font-style: italic; white-space: pre-wrap;"></p>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <button class="btn btn-teal" style="flex: 1;" onclick="shareViaWhatsApp()">
+              <i class="ti ti-brand-whatsapp"></i> WhatsApp
+            </button>
+            <button class="btn" style="flex: 1;" onclick="shareViaEmail()">
+              <i class="ti ti-mail"></i> Correo
+            </button>
+          </div>
+          
+          <button class="btn btn-danger" style="margin-top: 0.5rem;" onclick="closeShareModal()">
+            Cerrar Ventana
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Overlay -->
+  <div id="toast"></div>
+
+  <!-- Scripts del Sistema -->
+  <script src="js/db.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/app_admin.js"></script>
+</body>
+</html>
