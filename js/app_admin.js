@@ -133,8 +133,8 @@ async function loadAdminDashboard() {
   });
 
   // Dividir por estados
-  const pending = filtered.filter(s => s.status === "Sin Respuesta" || s.status === "Pendiente");
-  const completed = filtered.filter(s => s.status === "Con Respuesta" || s.status === "Completado" || !s.status);
+  const pending = filtered.filter(s => s.status === "Sin Respuesta" || s.status === "Respuestas Completadas" || s.status === "Pendiente");
+  const completed = filtered.filter(s => s.status === "Finalizado" || s.status === "Con Respuesta" || s.status === "Completado" || !s.status);
 
   // Renderizar Fichas Pendientes
   if (pendingTbody) {
@@ -149,14 +149,20 @@ async function loadAdminDashboard() {
           </td>
         </tr>
       `;
+    } else {
       pendingTbody.innerHTML = pending.map(s => {
+        const isCompletedByCouple = s.status === "Respuestas Completadas";
+        const statusChip = isCompletedByCouple
+          ? `<span class="chip chip-green"><i class="ti ti-circle-check"></i> Respuestas Completadas</span>`
+          : `<span class="chip chip-amber"><i class="ti ti-loader"></i> Sin Respuesta</span>`;
+
         return `
           <tr>
             <td style="font-weight: 600; color: var(--sage-dark);">
               ${s.n1 || '—'} <span style="font-weight: normal; color: var(--text-light);">y</span> ${s.n2 || '—'}
             </td>
             <td>${s.fec || '—'}</td>
-            <td style="text-align: center;"><span class="chip chip-amber"><i class="ti ti-loader"></i> Recibido / Pendiente</span></td>
+            <td style="text-align: center;">${statusChip}</td>
             <td>
               <div class="actions">
                 <button class="action-btn" title="Compartir enlace de preguntas" onclick="openShareModal('${s.id}')" style="background-color: var(--teal-light); color: var(--teal-dark);">
@@ -210,7 +216,10 @@ async function loadAdminDashboard() {
               ${s.n1 || '—'} <span style="font-weight: normal; color: var(--text-light);">y</span> ${s.n2 || '—'}
             </td>
             <td>${s.fec || '—'}</td>
-            <td style="text-align: center;"><span class="chip chip-green">Sesión ${s.ns || 1}</span></td>
+            <td style="text-align: center;">
+              <span class="chip chip-green" style="margin-bottom: 4px; display: inline-block;">Sesión ${s.ns || 1}</span><br>
+              <span class="chip chip-teal"><i class="ti ti-check"></i> Finalizado</span>
+            </td>
             <td>${s.ter || '—'}</td>
             <td>${s.frec || '—'}</td>
             <td>
@@ -304,9 +313,9 @@ async function loadSessionEditor(id) {
     }
   });
 
-  // Si la sesión es Pendiente, permitir editar datos demográficos. Si es Completado, bloquearlos.
-  const isPending = activeSession.status === "Sin Respuesta" || activeSession.status === "Pendiente";
-  setDemographicsEditable(isPending);
+  // Permitir editar datos demográficos solo en la Sesión 1 si no está Finalizada. En la Sesión 2+ siempre se bloquean.
+  const isDemographicsEditable = (parseInt(activeSession.ns) || 1) === 1 && activeSession.status !== "Finalizado";
+  setDemographicsEditable(isDemographicsEditable);
 
   // Cargar y renderizar preguntas dinámicas
   activeSession.questions = getSessionQuestions(activeSession);
@@ -377,7 +386,7 @@ async function saveActiveSession() {
 
   try {
     // Forzar estado como completado
-    activeSession.status = "Con Respuesta";
+    activeSession.status = "Finalizado";
     
     await saveSession(activeSession, verifiedPassword);
     showToast("Expediente guardado e indexado en el historial.");
@@ -538,6 +547,20 @@ function buildSum() {
   const n2 = activeSession.n2 || "Persona 2";
   const areasStr = activeSession.areas.length > 0 ? activeSession.areas.join(", ") : "Ninguna seleccionada";
   
+  // Obtener y formatear preguntas y respuestas
+  const questionsList = getSessionQuestions(activeSession);
+  let qHtml = "";
+  if (questionsList && questionsList.length > 0) {
+    questionsList.forEach((q, i) => {
+      qHtml += `
+        <div style="margin-bottom: 0.75rem; border-left: 3px solid var(--sage-main); padding-left: 10px; text-align: left;">
+          <p style="font-weight: 600; font-size: 0.85rem; color: var(--sage-dark); margin-bottom: 2px;">P${i+1}: ${q.q}</p>
+          <p style="font-size: 0.85rem; color: var(--text-main); font-style: italic; white-space: pre-wrap; margin-left: 4px;">${q.a || 'Sin respuesta'}</p>
+        </div>
+      `;
+    });
+  }
+
   sumcont.innerHTML = `
     <div class="sum-grid">
       <div class="sum-card">
@@ -559,6 +582,12 @@ function buildSum() {
       <div class="sum-card" style="grid-column: span 2;">
         <div class="sum-title">⚠️ Áreas de conflicto detectadas</div>
         <div class="sum-val">${areasStr}</div>
+      </div>
+      <div class="sum-card" style="grid-column: span 2;">
+        <div class="sum-title">❓ Preguntas y Respuestas de la Sesión</div>
+        <div class="sum-val" style="display: flex; flex-direction: column; gap: 0.4rem; font-weight: normal; color: var(--text-main);">
+          ${qHtml || 'No hay preguntas registradas.'}
+        </div>
       </div>
       <div class="sum-card" style="grid-column: span 2;">
         <div class="sum-title">📝 Tarea Asignada para la casa</div>
@@ -628,7 +657,7 @@ function renderQuestions() {
           <i class="ti ti-trash"></i>
         </button>
       </div>
-      <textarea class="q-textarea" placeholder="Respuesta del paciente/terapeuta..." style="width: 100%; min-height: 80px;">${item.a}</textarea>
+      <textarea class="q-textarea" placeholder="Respuesta del paciente/terapeuta..." style="width: 100%; min-height: 80px;">${item.a || ''}</textarea>
     `;
     container.appendChild(card);
   });
@@ -709,7 +738,7 @@ async function createNewSessionFromExisting(id) {
     dtot: 60, hi: "09:00", // Tiempos iniciales
     t1: 10, t2: 20, t3: 20, t4: 10,
     prox: "", frec: session.frec || "Semanal",
-    status: "Con Respuesta"
+    status: "Sin Respuesta"
   };
 
   // Llenar inputs de texto

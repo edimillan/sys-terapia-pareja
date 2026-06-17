@@ -52,7 +52,7 @@ async function initDatabase() {
 async function fetchAllSessions(password = "") {
   if (onlineMode) {
     const passToUse = password || verifiedPassword;
-    const response = await fetch('api/sessions', {
+    const response = await fetch(`api/sessions?_=${Date.now()}`, {
       method: 'GET',
       headers: {
         'Authorization': passToUse

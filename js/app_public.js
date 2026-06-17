@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     let sessionData = null;
     if (onlineMode) {
       try {
-        const response = await fetch(`api/sessions?id=${sessionId}`);
+        const response = await fetch(`api/sessions?id=${sessionId}&_=${Date.now()}`);
         if (response.ok) {
           sessionData = await response.json();
         } else {
@@ -256,7 +256,7 @@ function renderQuestions() {
             <i class="ti ti-trash"></i>
           </button>
         </div>
-        <textarea class="q-textarea" placeholder="Escriban su respuesta aquí..." style="width: 100%; min-height: 80px;">${item.a}</textarea>
+        <textarea class="q-textarea" placeholder="Escriban su respuesta aquí..." style="width: 100%; min-height: 80px;">${item.a || ''}</textarea>
       `;
     }
     container.appendChild(card);
@@ -322,14 +322,14 @@ async function submitPatientForm() {
           const idx = list.findIndex(s => s.id === sessionId);
           if (idx !== -1) {
             list[idx].questions = activeSession.questions;
-            list[idx].status = "Con Respuesta";
+            list[idx].status = "Respuestas Completadas";
             localStorage.setItem('TEACOMPANO_SESSIONS', JSON.stringify(list));
           }
         }
       }
     } else {
-      // Forzar el estado en "Sin Respuesta" al enviar por el paciente
-      activeSession.status = "Sin Respuesta";
+      // Al registrarse por primera vez, el paciente ya responde las preguntas iniciales
+      activeSession.status = "Respuestas Completadas";
       await saveSession(activeSession);
     }
     

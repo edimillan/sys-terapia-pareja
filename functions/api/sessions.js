@@ -132,9 +132,9 @@ export async function onRequest(context) {
       if (!body.id) {
         // Generar un ID único para la nueva ficha clínica
         body.id = "session_" + Date.now();
-        // Si no es el administrador (es un paciente), forzar el estado en "Sin Respuesta"
+        // Si no es el administrador (es un paciente), forzar el estado en "Respuestas Completadas"
         if (!isAdmin) {
-          body.status = "Sin Respuesta";
+          body.status = "Respuestas Completadas";
         }
       } else {
         // Si se está editando una sesión existente (tiene ID)
@@ -152,8 +152,8 @@ export async function onRequest(context) {
 
           // Mezclar: Mantener lo que el terapeuta ya rellenó, pero actualizar las respuestas
           existing.questions = body.questions;
-          // Actualizar estado a "Con Respuesta" al ser enviado por el paciente
-          existing.status = "Con Respuesta";
+          // Actualizar estado a "Respuestas Completadas" al ser enviado por el paciente
+          existing.status = "Respuestas Completadas";
 
           // Usar el registro mezclado para guardar
           await KV.put(`session_${existing.id}`, JSON.stringify(existing));

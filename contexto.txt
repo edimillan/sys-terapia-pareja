@@ -1,0 +1,126 @@
+========================================================================
+INFORME DE AVANCE Y CONTEXTO DEL SISTEMA — PORTAL CLÍNICO TEACOMPAÑO
+========================================================================
+
+Este documento detalla el estado actual, las funcionalidades implementadas,
+el flujo de estados del sistema y un resumen técnico de los archivos modificados
+para la gestión de terapias de pareja del Centro Psicológico TeAcompaño (Salud Mental 360).
+
+------------------------------------------------------------------------
+1. DESCRIPCIÓN GENERAL DEL SISTEMA
+------------------------------------------------------------------------
+El sistema es una aplicación web híbrida (Online / Offline) que permite a los
+terapeutas gestionar el expediente clínico de terapias de pareja, registrar
+sesiones consecutivas y enviar enlaces de preguntas de reflexión para que los
+pacientes respondan en sus propios dispositivos antes de la sesión.
+
+La persistencia de datos funciona en dos modalidades automáticas:
+- MODO ONLINE (Cloudflare KV): Las sesiones y respuestas se almacenan y
+  sincronizan en la nube. Requiere contraseña de administrador ("admin123").
+- MODO OFFLINE (LocalStorage): El sistema conmuta automáticamente a almacenamiento
+  local si se ejecuta de forma local o sin conexión.
+
+------------------------------------------------------------------------
+2. FLUJO DE TRABAJO Y CICLO DE VIDA DE UNA SESIÓN
+------------------------------------------------------------------------
+El sistema organiza el estado clínico de las parejas a través de tres estados:
+
+A. Registro Inicial (Sesión 1):
+   - La pareja ingresa a 'index.html' (sin parámetro ID en la URL).
+   - Completa el Paso 0 (Datos Generales), Paso 1 (Motivos e inquietudes) y
+     Paso 2 (Respuestas a las 5 preguntas iniciales de reflexión).
+   - Al hacer clic en "Enviar", la sesión se guarda en la base de datos con el
+     estado "Respuestas Completadas" (indicando al terapeuta que la ficha inicial
+     está lista para revisión).
+
+B. Generación de Nuevas Sesiones (Sesión 2 en adelante):
+   - El terapeuta, en 'admin.html', hace clic en el botón "+" ("Nueva Sesión")
+     dentro del Historial Clínico para la pareja seleccionada.
+   - El sistema crea la nueva sesión (incrementando automáticamente el número
+     a 2, 3, etc.), copia los datos demográficos históricos, mantiene las preguntas
+     anteriores (pero vacía las respuestas) y asigna inicialmente el estado "Sin Respuesta".
+   - Los datos demográficos generales e históricos quedan bloqueados (no editables)
+     para evitar alteraciones accidentales del historial.
+   - El terapeuta puede añadir o modificar preguntas personalizadas para esta sesión.
+
+C. Compartir Cuestionario:
+   - El terapeuta hace clic en "Compartir Cuestionario por WhatsApp" o "Enviar Preguntas".
+   - La sesión se guarda en estado "Sin Respuesta" y se abre un modal con un
+     mensaje pre-redactado y un enlace dinámico robusto (ej: 'index.html?id=session_XXXX').
+   - El enlace deriva directamente a las preguntas de reflexión de la pareja,
+     ocultando las notas privadas, los tiempos y las páginas demográficas.
+
+D. Respuesta de la Pareja y Auto-rellenado:
+   - La pareja abre el enlace en su móvil, responde a las preguntas personalizadas
+     y las envía.
+   - En la nube, se realiza un merge (mezclado) que añade las respuestas al objeto
+     clínico y cambia automáticamente su estado a "Respuestas Completadas".
+   - El dashboard del terapeuta actualiza el indicador visual de la sesión a verde
+     ("Respuestas Completadas").
+   - Al hacer clic en "Completar Sesión", las respuestas contestadas por la pareja
+     se auto-rellenan de forma instantánea en los campos del editor clínico.
+
+E. Finalización:
+   - El terapeuta rellena las observaciones de conducta no verbal, define la tarea,
+     distribuye los tiempos de la sesión y hace clic en "Finalizar y Guardar Sesión".
+   - El estado cambia a "Finalizado", y la sesión pasa a almacenarse en el
+     Historial Clínico de Completados.
+
+------------------------------------------------------------------------
+3. CAMBIOS TÉCNICOS Y RESOLUCIÓN DE BUGS (ÚLTIMA ITERACIÓN)
+------------------------------------------------------------------------
+Durante el desarrollo se identificaron y resolvieron los siguientes problemas críticos:
+
+- BUG de Redirección (Login): Cuando el administrador accedía por la ruta limpia
+  '/admin' (sin '.html'), la función de enlace público generaba una URL errónea
+  que forzaba al paciente a autenticarse. Se corrigió 'updateShareLinks()' con un
+  parche de rutas robusto que identifica '/admin.html', '/admin' y 'file://'.
+- BUG de Caché de Navegador: Cloudflare o el navegador almacenaban en caché el GET
+  de la lista de sesiones, por lo que las respuestas de la pareja no se veían
+  inmediatamente al reabrir la sesión. Se solucionó implementando Cache-Busting
+  mediante el parámetro dinámico '_=${Date.now()}' en todos los GET.
+- BUG de Bloqueo de Edición: Los datos demográficos se volvían editables en
+  sesiones superiores si estas regresaban al estado "Sin Respuesta". Se corrigió
+  restringiendo la edición demográfica únicamente a la Sesión 1 y siempre que
+  esta no esté finalizada.
+- BUG de Renderizado de "undefined": Si una pregunta no tenía respuesta aún, el
+  textarea se rellenaba con la cadena literal "undefined". Se corrigió usando la
+  evaluación de cortocircuito '${item.a || ""}'.
+
+------------------------------------------------------------------------
+4. INVENTARIO DE ARCHIVOS MODIFICADOS Y SU ROL
+------------------------------------------------------------------------
+
+* admin.html:
+  - Interfaz de usuario del Portal Clínico Administrativo. Contiene las tablas
+    de Fichas de Ingreso (Pendientes) y de Historial Clínico (Completados), el
+    wizard/editor clínico del terapeuta, y el modal para compartir enlaces.
+
+* index.html:
+  - Interfaz del Formulario Público para Parejas. Carga el banner de bienvenida
+    dinámico y expone la vista simplificada de solo preguntas si detecta un ID.
+
+* functions/api/sessions.js (Cloudflare Pages Functions / Backend):
+  - Procesa GET (protegido por contraseña para admin, sanitizado sin notas clínicas
+    para la vista pública de parejas).
+  - Procesa POST (guarda cambios completos de admin, o realiza merge de preguntas
+    y actualiza a "Respuestas Completadas" cuando publica la pareja).
+  - Procesa DELETE (protegido para borrado definitivo de expedientes).
+
+* js/db.js:
+  - Controlador de base de datos híbrida local/nube. Maneja las cabeceras de
+    autorización y el control de cache-busting en las peticiones GET.
+
+* js/app_admin.js:
+  - Controla la lógica de 'admin.html', la navegación del asistente, el bloqueo
+    de inputs fijos, el clonado inteligente de datos para crear nuevas sesiones, y
+    la generación de mensajes personalizados para WhatsApp y correo.
+
+* js/app_public.js:
+  - Controla la lógica de 'index.html', el parseo de parámetros de URL, el dibujado
+    de preguntas en modo de enlace de sesión única y el envío de respuestas al backend.
+
+* js/export.js:
+  - Generador de reportes PDF e integraciones para descarga física.
+
+========================================================================
