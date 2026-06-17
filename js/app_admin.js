@@ -20,7 +20,7 @@ let activeSession = {
   dtot: 60, hi: "09:00",
   t1: 10, t2: 20, t3: 20, t4: 10,
   prox: "", frec: "Semanal",
-  status: "Completado"
+  status: "Con Respuesta"
 };
 
 // Carga inicial
@@ -133,8 +133,8 @@ async function loadAdminDashboard() {
   });
 
   // Dividir por estados
-  const pending = filtered.filter(s => s.status === "Pendiente");
-  const completed = filtered.filter(s => s.status === "Completado" || !s.status);
+  const pending = filtered.filter(s => s.status === "Sin Respuesta" || s.status === "Pendiente");
+  const completed = filtered.filter(s => s.status === "Con Respuesta" || s.status === "Completado" || !s.status);
 
   // Renderizar Fichas Pendientes
   if (pendingTbody) {
@@ -305,7 +305,7 @@ async function loadSessionEditor(id) {
   });
 
   // Si la sesión es Pendiente, permitir editar datos demográficos. Si es Completado, bloquearlos.
-  const isPending = activeSession.status === "Pendiente";
+  const isPending = activeSession.status === "Sin Respuesta" || activeSession.status === "Pendiente";
   setDemographicsEditable(isPending);
 
   // Cargar y renderizar preguntas dinámicas
@@ -377,7 +377,7 @@ async function saveActiveSession() {
 
   try {
     // Forzar estado como completado
-    activeSession.status = "Completado";
+    activeSession.status = "Con Respuesta";
     
     await saveSession(activeSession, verifiedPassword);
     showToast("Expediente guardado e indexado en el historial.");
@@ -709,7 +709,7 @@ async function createNewSessionFromExisting(id) {
     dtot: 60, hi: "09:00", // Tiempos iniciales
     t1: 10, t2: 20, t3: 20, t4: 10,
     prox: "", frec: session.frec || "Semanal",
-    status: "Completado"
+    status: "Con Respuesta"
   };
 
   // Llenar inputs de texto
@@ -846,8 +846,20 @@ function updateShareLinks() {
   const couple = document.getElementById("share-couple-name").value.trim() || "{Nombre de la pareja}";
   const therapist = document.getElementById("share-therapist-name").value.trim() || "{Nombre del terapeuta}";
   
-  // Calcular la URL pública del formulario (index.html en el mismo servidor)
-  const baseLink = window.location.origin + window.location.pathname.replace("admin.html", "index.html");
+  // Calcular la URL pública del formulario (index.html en el mismo servidor) de manera robusta
+  let baseLink = "";
+  if (window.location.protocol === "file:") {
+    baseLink = window.location.href.split("?")[0].replace("admin.html", "index.html");
+  } else {
+    const path = window.location.pathname;
+    if (path.endsWith("/admin.html")) {
+      baseLink = window.location.origin + path.replace("/admin.html", "/index.html");
+    } else if (path.endsWith("/admin")) {
+      baseLink = window.location.origin + path.substring(0, path.length - 6) + "/index.html";
+    } else {
+      baseLink = window.location.origin + path.replace("admin", "index");
+    }
+  }
   
   let textMessage = "";
   if (currentShareSessionId) {
@@ -899,15 +911,15 @@ async function saveAndShareQuestions() {
       activeSession.id = "session_" + Date.now();
     }
     
-    // Forzar estado como Pendiente
-    activeSession.status = "Pendiente";
+    // Forzar estado como Sin Respuesta
+    activeSession.status = "Sin Respuesta";
     
     await saveSession(activeSession, verifiedPassword);
     
     // Recargar localmente
     sessions = await fetchAllSessions(verifiedPassword);
     
-    showToast("Sesión guardada en estado Pendiente.");
+    showToast("Sesión guardada en estado Sin Respuesta.");
     
     // Cerrar editor y volver al dashboard
     document.getElementById("wizard-section").style.display = "none";

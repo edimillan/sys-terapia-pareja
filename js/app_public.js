@@ -19,7 +19,7 @@ let activeSession = {
     { q: "¿Qué sienten que la otra persona no logra entender o valorar de ustedes?", a: "" },
     { q: "¿Qué aspectos positivos los mantiene unidos y valoran hoy de su relación?", a: "" }
   ],
-  status: "Pendiente"
+  status: "Sin Respuesta"
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -322,14 +322,14 @@ async function submitPatientForm() {
           const idx = list.findIndex(s => s.id === sessionId);
           if (idx !== -1) {
             list[idx].questions = activeSession.questions;
-            list[idx].status = "Completado";
+            list[idx].status = "Con Respuesta";
             localStorage.setItem('TEACOMPANO_SESSIONS', JSON.stringify(list));
           }
         }
       }
     } else {
-      // Forzar el estado en "Pendiente" al enviar por el paciente
-      activeSession.status = "Pendiente";
+      // Forzar el estado en "Sin Respuesta" al enviar por el paciente
+      activeSession.status = "Sin Respuesta";
       await saveSession(activeSession);
     }
     
