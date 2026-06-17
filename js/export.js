@@ -240,54 +240,18 @@ function exportPDF(s) {
   doc.setFontSize(7.5);
   doc.text('Salud Mental 360  ·  TeAcompaño Centro Psicológico  ·  Alianza por tu bienestar integral', 41, 29.5);
 
-  // 1. SECCIÓN: ENFOQUE TERAPÉUTICO UTILIZADO
-  doc.setTextColor(...cSageDark);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.text('Enfoque terapéutico utilizado (marcar)', 15, 44);
-
-  const enfoquesList = ['Gottman', 'EFT', 'TCC de pareja', 'Sistémico', 'Narrativo', 'Gestalt', 'Psicodinámico'];
-  
-  // Dibujar cápsulas de enfoque
-  let ex = 15;
-  let ey = 48;
-  const colWE = 45;
-  const rowHE = 7;
-  
-  enfoquesList.forEach((enf, index) => {
-    const active = s.enf && s.enf.includes(enf);
-    const col = index % 4;
-    const row = Math.floor(index / 4);
-    const currX = ex + col * colWE;
-    const currY = ey + row * rowHE;
-    
-    doc.setFillColor(active ? 74 : 255, active ? 158 : 255, active ? 154 : 255); // Usar color Teal si está activo
-    doc.setDrawColor(...cBorder);
-    doc.roundedRect(currX, currY, 41, 5, 2.5, 2.5, 'FD');
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(active ? 255 : 150);
-    doc.setFontSize(8.5);
-    doc.text(active ? 'X' : ' ', currX + 3.5, currY + 3.6);
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(active ? 255 : cText[0], active ? 255 : cText[1], active ? 255 : cText[2]);
-    doc.setFontSize(7.5);
-    doc.text(enf, currX + 8, currY + 3.4);
-  });
-
-  // 2. SECCIÓN: OBSERVACIONES Y TAREAS
+  // 1. SECCIÓN: OBSERVACIONES Y TAREAS
   // Cajas side-by-side de Observaciones y Tareas asignadas (altura 40mm)
-  drawMotivoBox(15, 67, 88, 40, 'Observaciones clínicas del terapeuta', s.obs);
-  drawMotivoBox(107, 67, 88, 40, 'Tarea asignada para próxima sesión', s.tar);
+  drawMotivoBox(15, 44, 88, 40, 'Observaciones clínicas del terapeuta', s.obs);
+  drawMotivoBox(107, 44, 88, 40, 'Tarea asignada para próxima sesión', s.tar);
 
-  // 3. SECCIÓN: GESTIÓN DEL TIEMPO
+  // 2. SECCIÓN: GESTIÓN DEL TIEMPO
   doc.setFillColor(241, 246, 242);
-  doc.roundedRect(15, 114, contentW, 7, 2, 2, 'F');
+  doc.roundedRect(15, 91, contentW, 7, 2, 2, 'F');
   doc.setTextColor(...cSageDark);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
-  doc.text('Gestión del tiempo', 18, 119);
+  doc.text('Gestión del tiempo', 18, 96);
 
   // Fila 1 de Tiempos: Duración total, Hora Inicio, Hora Fin estimada, Fin Real
   const [hh, mm] = (s.hi || "09:00").split(":").map(Number);
@@ -295,65 +259,64 @@ function exportPDF(s) {
   const endTime = new Date(2000, 0, 1, hh, mm + duration);
   const hFin = endTime.getHours().toString().padStart(2, '0') + ':' + endTime.getMinutes().toString().padStart(2, '0');
 
-  drawInputBox(15, 125, 41, 10, 'DURACIÓN TOTAL (MIN)', s.dtot);
-  drawInputBox(60, 125, 41, 10, 'HORA DE INICIO', s.hi);
-  drawInputBox(105, 125, 41, 10, 'HORA DE FIN ESTIMADA', hFin);
-  drawInputBox(150, 125, 45, 10, 'FIN REAL', hFin); // Completa el fin real por defecto
+  drawInputBox(15, 102, 41, 10, 'DURACIÓN TOTAL (MIN)', s.dtot);
+  drawInputBox(60, 102, 41, 10, 'HORA DE INICIO', s.hi);
+  drawInputBox(105, 102, 41, 10, 'HORA DE FIN ESTIMADA', hFin);
+  drawInputBox(150, 102, 45, 10, 'FIN REAL', hFin); // Completa el fin real por defecto
 
   // Distribución de bloques de la sesión
   doc.setTextColor(...cSageDark);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
-  doc.text('Distribución de la sesión', 15, 141);
+  doc.text('Distribución de la sesión', 15, 118);
 
-  // 4 Bloques horizontales de colores
   // Bloque 1: Apertura / revisión
   doc.setFillColor(...cSage); // Sage green
-  doc.roundedRect(15, 145, 41, 6, 1.5, 1.5, 'F');
+  doc.roundedRect(15, 122, 41, 6, 1.5, 1.5, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
-  doc.text(`${s.t1 || 0} min`, 35.5, 149.2, { align: 'center' });
+  doc.text(`${s.t1 || 0} min`, 35.5, 126.2, { align: 'center' });
   doc.setTextColor(...cTextMuted);
   doc.setFontSize(7.5);
-  doc.text('Apertura / revisión', 15, 154.5);
+  doc.text('Apertura / revisión', 15, 131.5);
 
   // Bloque 2: Exploración del conflicto
   doc.setFillColor(...cOrange); // Orange
-  doc.roundedRect(60, 145, 41, 6, 1.5, 1.5, 'F');
+  doc.roundedRect(60, 122, 41, 6, 1.5, 1.5, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${s.t2 || 0} min`, 80.5, 149.2, { align: 'center' });
+  doc.text(`${s.t2 || 0} min`, 80.5, 126.2, { align: 'center' });
   doc.setTextColor(...cTextMuted);
   doc.setFontSize(7.5);
-  doc.text('Exploración del conflicto', 60, 154.5);
+  doc.text('Exploración del conflicto', 60, 131.5);
 
   // Bloque 3: Intervención / técnica
   doc.setFillColor(74, 158, 154); // Teal
-  doc.roundedRect(105, 145, 41, 6, 1.5, 1.5, 'F');
+  doc.roundedRect(105, 122, 41, 6, 1.5, 1.5, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${s.t3 || 0} min`, 125.5, 149.2, { align: 'center' });
+  doc.text(`${s.t3 || 0} min`, 125.5, 126.2, { align: 'center' });
   doc.setTextColor(...cTextMuted);
   doc.setFontSize(7.5);
-  doc.text('Intervención / técnica', 105, 154.5);
+  doc.text('Intervención / técnica', 105, 131.5);
 
   // Bloque 4: Cierre / tarea nueva
   doc.setFillColor(179, 201, 182); // Sage mid
-  doc.roundedRect(150, 145, 45, 6, 1.5, 1.5, 'F');
+  doc.roundedRect(150, 122, 45, 6, 1.5, 1.5, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${s.t4 || 0} min`, 172.5, 149.2, { align: 'center' });
+  doc.text(`${s.t4 || 0} min`, 172.5, 126.2, { align: 'center' });
   doc.setTextColor(...cTextMuted);
   doc.setFontSize(7.5);
-  doc.text('Cierre / tarea nueva', 150, 154.5);
+  doc.text('Cierre / tarea nueva', 150, 131.5);
 
   // Fila 2 de tiempos: Próxima sesión, frecuencia, hora
-  drawInputBox(15, 160, 60, 10, 'PRÓXIMA SESIÓN — FECHA', s.prox);
-  drawInputBox(80, 160, 58, 10, 'FRECUENCIA', s.frec);
-  drawInputBox(143, 160, 52, 10, 'HORA', s.hi || '—');
+  drawInputBox(15, 137, 60, 10, 'PRÓXIMA SESIÓN — FECHA', s.prox);
+  drawInputBox(80, 137, 58, 10, 'FRECUENCIA', s.frec);
+  drawInputBox(143, 137, 52, 10, 'HORA', s.hi || '—');
 
-  // 4. SECCIÓN: PREGUNTAS ADICIONALES (si existen > 5)
+  // 3. SECCIÓN: PREGUNTAS ADICIONALES (si existen > 5)
   const questionsList = s.questions && s.questions.length > 0 ? s.questions : [
     { q: "¿Qué esperan lograr activamente al venir a terapia?", a: s.q1 || "" },
     { q: "¿Cuándo fue el último periodo donde se sintieron bien en pareja?", a: s.q2 || "" },
@@ -364,13 +327,13 @@ function exportPDF(s) {
 
   if (questionsList.length > 5) {
     doc.setFillColor(241, 246, 242);
-    doc.roundedRect(15, 177, contentW, 7, 2, 2, 'F');
+    doc.roundedRect(15, 154, contentW, 7, 2, 2, 'F');
     doc.setTextColor(...cSageDark);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
-    doc.text('Preguntas adicionales de la sesión', 18, 182);
+    doc.text('Preguntas adicionales de la sesión', 18, 159);
 
-    let extraY = 188;
+    let extraY = 165;
     for (let i = 5; i < questionsList.length; i++) {
       if (extraY + 16 > 275) break; // Evitar salir de la página
       const qObj = questionsList[i];

@@ -291,15 +291,7 @@ async function loadSessionEditor(id) {
     }
   });
 
-  // Marcar tags de enfoques terapéuticos
-  document.querySelectorAll("#enf .tag").forEach(t => {
-    const text = t.textContent.trim();
-    if (activeSession.enf && activeSession.enf.includes(text)) {
-      t.classList.add("on");
-    } else {
-      t.classList.remove("on");
-    }
-  });
+
 
   // Marcar escala de compromiso
   document.querySelectorAll("#sc1 .snum").forEach(s => {
@@ -406,7 +398,6 @@ function syncFormToActiveSession() {
   });
 
   activeSession.areas = [...document.querySelectorAll("#areas .tag.on")].map(t => t.textContent.trim());
-  activeSession.enf = [...document.querySelectorAll("#enf .tag.on")].map(t => t.textContent.trim());
   
   const selSnum = document.querySelector("#sc1 .snum.on");
   activeSession.sc1 = selSnum ? parseInt(selSnum.textContent.trim()) : "";
@@ -503,7 +494,6 @@ function buildSum() {
   const n1 = activeSession.n1 || "Persona 1";
   const n2 = activeSession.n2 || "Persona 2";
   const areasStr = activeSession.areas.length > 0 ? activeSession.areas.join(", ") : "Ninguna seleccionada";
-  const enfStr = activeSession.enf.length > 0 ? activeSession.enf.join(", ") : "Ninguno seleccionado";
   
   sumcont.innerHTML = `
     <div class="sum-grid">
@@ -528,10 +518,6 @@ function buildSum() {
         <div class="sum-val">${areasStr}</div>
       </div>
       <div class="sum-card" style="grid-column: span 2;">
-        <div class="sum-title">🛠 Enfoque terapéutico principal</div>
-        <div class="sum-val">${enfStr}</div>
-      </div>
-      <div class="sum-card" style="grid-column: span 2;">
         <div class="sum-title">📝 Tarea Asignada para la casa</div>
         <div class="sum-val">${activeSession.tar || 'Ninguna tarea asignada.'}</div>
       </div>
@@ -548,7 +534,6 @@ function getSummaryAIPrompt() {
   const n1 = activeSession.n1 || "Persona 1";
   const n2 = activeSession.n2 || "Persona 2";
   const areasStr = activeSession.areas.length > 0 ? activeSession.areas.join(", ") : "Ninguna";
-  const enfStr = activeSession.enf.length > 0 ? activeSession.enf.join(", ") : "Ninguno";
   
   let qText = "";
   if (activeSession.questions && activeSession.questions.length > 0) {
@@ -563,7 +548,6 @@ function getSummaryAIPrompt() {
          `Motivo de ${n1}: "${activeSession.m1 || '—'}". Motivo de ${n2}: "${activeSession.m2 || '—'}". ` +
          `Áreas de conflicto: ${areasStr}. Compromiso de pareja: ${activeSession.sc1 || '—'}/10. Duración del conflicto: ${activeSession.dur || '—'}. ` +
          qText +
-         `Enfoque aplicado: ${enfStr}. ` +
          `Observaciones clínicas: "${activeSession.obs || '—'}". Tarea escolar asignada: "${activeSession.tar || '—'}".`;
 }
 
@@ -660,7 +644,6 @@ async function createNewSessionFromExisting(id) {
                  { q: "¿Qué sienten que la otra persona no logra entender de ustedes?", a: "" },
                  { q: "¿Qué cosas positivas los mantienen unidos aún hoy?", a: "" }
                ],
-    enf: session.enf || [], // Mantener enfoques terapéuticos aplicados
     obs: "", // Vaciar observaciones para escribir nuevas
     tar: "", // Vaciar tarea asignada
     dtot: 60, hi: "09:00", // Tiempos iniciales
@@ -687,11 +670,7 @@ async function createNewSessionFromExisting(id) {
     t.classList.toggle("on", activeSession.areas.includes(text));
   });
 
-  // Marcar tags de enfoques
-  document.querySelectorAll("#enf .tag").forEach(t => {
-    const text = t.textContent.trim();
-    t.classList.toggle("on", activeSession.enf.includes(text));
-  });
+
 
   // Desmarcar escala de compromiso
   document.querySelectorAll("#sc1 .snum").forEach(s => {
