@@ -188,7 +188,20 @@ async function loadAdminDashboard() {
         </tr>
       `;
     } else {
+      const seenCouples = new Set();
       completedTbody.innerHTML = completed.map(s => {
+        const n1Key = (s.n1 || '').toLowerCase().trim();
+        const n2Key = (s.n2 || '').toLowerCase().trim();
+        const coupleKey = [n1Key, n2Key].sort().join('|');
+        const isLatest = !seenCouples.has(coupleKey);
+        seenCouples.add(coupleKey);
+
+        const plusButton = isLatest ? `
+          <button class="action-btn" title="Nueva Sesión" onclick="createNewSessionFromExisting('${s.id}')" style="background-color: var(--sage-light); color: var(--sage-dark);">
+            <i class="ti ti-plus"></i>
+          </button>
+        ` : '';
+
         return `
           <tr>
             <td style="font-weight: 600; color: var(--sage-dark);">
@@ -200,9 +213,7 @@ async function loadAdminDashboard() {
             <td>${s.frec || '—'}</td>
             <td>
               <div class="actions">
-                <button class="action-btn" title="Nueva Sesión" onclick="createNewSessionFromExisting('${s.id}')" style="background-color: var(--sage-light); color: var(--sage-dark);">
-                  <i class="ti ti-plus"></i>
-                </button>
+                ${plusButton}
                 <button class="action-btn" title="Editar Sesión" onclick="loadSessionEditor('${s.id}')">
                   <i class="ti ti-edit"></i>
                 </button>
@@ -644,6 +655,23 @@ async function createNewSessionFromExisting(id) {
   const session = allSess.find(s => s.id === id);
   if (!session) return;
 
+  // Buscar todas las sesiones de esta pareja para calcular la sesión más alta
+  const n1Key = (session.n1 || '').toLowerCase().trim();
+  const n2Key = (session.n2 || '').toLowerCase().trim();
+  
+  const coupleSessions = allSess.filter(s => {
+    const s1 = (s.n1 || '').toLowerCase().trim();
+    const s2 = (s.n2 || '').toLowerCase().trim();
+    return (s1 === n1Key && s2 === n2Key) || (s1 === n2Key && s2 === n1Key);
+  });
+  
+  const maxNs = coupleSessions.reduce((max, s) => {
+    const num = parseInt(s.ns) || 1;
+    return num > max ? num : max;
+  }, 0);
+  
+  const nextNs = maxNs + 1;
+
   // Clonamos demográficos pero limpiamos campos específicos de la sesión individual
   activeSession = {
     id: "", // Vacío para crear nueva clave en KV/LocalStorage
@@ -654,7 +682,7 @@ async function createNewSessionFromExisting(id) {
     rel: session.rel || "",
     est: session.est || "",
     hij: session.hij || "",
-    ns: (parseInt(session.ns) || 1) + 1, // Auto-incrementar número de sesión
+    ns: nextNs, // Siguiente número de sesión calculado dinámicamente
     fec: new Date().toISOString().split('T')[0], // Fecha actual
     ter: session.ter || "",
     m1: "", m2: "", // Vaciar motivos
