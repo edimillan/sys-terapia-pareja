@@ -26,12 +26,90 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Inicializar base de datos híbrida (offline/online)
   await initDatabase();
 
-  // Renderizar preguntas por defecto
-  renderQuestions();
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get('id');
 
-  // Fecha de hoy por defecto para la ficha
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById("fec").value = today;
+  if (sessionId) {
+    // Modo de enlace de sesión único para la pareja
+    // 1. Ocultar stepper, barra de progreso y otras secciones
+    const stepper = document.getElementById("stepper");
+    if (stepper) stepper.style.display = "none";
+    
+    const progTrack = document.querySelector(".progress-track");
+    if (progTrack) progTrack.style.display = "none";
+    
+    const p0 = document.getElementById("p0");
+    if (p0) p0.classList.remove("active");
+    
+    const p1 = document.getElementById("p1");
+    if (p1) p1.classList.remove("active");
+    
+    const p2 = document.getElementById("p2");
+    if (p2) p2.classList.add("active");
+    
+    const btnBack = document.getElementById("btn-back");
+    if (btnBack) btnBack.style.display = "none";
+    
+    const defaultInfoBox = document.getElementById("default-info-box");
+    if (defaultInfoBox) defaultInfoBox.style.display = "none";
+    
+    const addQuestionContainer = document.getElementById("add-question-container");
+    if (addQuestionContainer) addQuestionContainer.style.display = "none";
+
+    // Cambiar texto de cabecera si es posible
+    const headerP = document.querySelector(".header-text p");
+    if (headerP) headerP.textContent = "Por favor completen sus respuestas para la sesión clínica";
+
+    // 2. Cargar datos de la sesión (Online / Offline Fallback)
+    let sessionData = null;
+    if (onlineMode) {
+      try {
+        const response = await fetch(`api/sessions?id=${sessionId}`);
+        if (response.ok) {
+          sessionData = await response.json();
+        } else {
+          console.error("Error al obtener la sesión pública.");
+        }
+      } catch (e) {
+        console.warn("Fallo fetch online, intentando offline:", e);
+      }
+    }
+    
+    if (!sessionData) {
+      const localData = localStorage.getItem('TEACOMPANO_SESSIONS');
+      if (localData) {
+        try {
+          const list = JSON.parse(localData);
+          sessionData = list.find(s => s.id === sessionId);
+        } catch (e) {
+          console.error("Error parseando LocalStorage:", e);
+        }
+      }
+    }
+
+    if (sessionData) {
+      activeSession = { ...activeSession, ...sessionData };
+      
+      // Mostrar Banner de Bienvenida personalizado
+      const welcomeBanner = document.getElementById("welcome-partner-banner");
+      const welcomeText = document.getElementById("welcome-partner-text");
+      if (welcomeBanner && welcomeText) {
+        welcomeText.innerHTML = `Hola <strong>${sessionData.n1 || ''}</strong> y <strong>${sessionData.n2 || ''}</strong>, por favor respondan a las siguientes preguntas para su Sesión N° <strong>${sessionData.ns || 1}</strong> con <strong>${sessionData.ter || 'su terapeuta'}</strong>:`;
+        welcomeBanner.style.display = "block";
+      }
+    } else {
+      alert("Error: No se pudo encontrar la sesión con el enlace provisto.");
+    }
+  } else {
+    // Comportamiento de registro normal
+    // Fecha de hoy por defecto para la ficha
+    const today = new Date().toISOString().split('T')[0];
+    const fecInput = document.getElementById("fec");
+    if (fecInput) fecInput.value = today;
+  }
+
+  // Renderizar preguntas
+  renderQuestions();
 });
 
 /**
@@ -102,26 +180,32 @@ function go(stepIdx) {
  * Recolecta la información de los inputs y la asocia al objeto activeSession
  */
 function syncFormToActiveSession() {
-  const fields = ['n1', 'n2', 'a1', 'a2', 'rel', 'est', 'hij', 'ns', 'fec', 'ter', 
-                  'm1', 'm2', 'dur', 'prev'];
-  
-  fields.forEach(f => {
-    const el = document.getElementById(f);
-    if (el) {
-      if (el.type === 'number') {
-        activeSession[f] = el.value ? parseInt(el.value) : "";
-      } else {
-        activeSession[f] = el.value;
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get('id');
+
+  // Si hay ID de sesión, NO sobreescribimos los campos demográficos ni motivos en el activeSession
+  if (!sessionId) {
+    const fields = ['n1', 'n2', 'a1', 'a2', 'rel', 'est', 'hij', 'ns', 'fec', 'ter', 
+                    'm1', 'm2', 'dur', 'prev'];
+    
+    fields.forEach(f => {
+      const el = document.getElementById(f);
+      if (el) {
+        if (el.type === 'number') {
+          activeSession[f] = el.value ? parseInt(el.value) : "";
+        } else {
+          activeSession[f] = el.value;
+        }
       }
-    }
-  });
+    });
 
-  // Áreas de conflicto
-  activeSession.areas = [...document.querySelectorAll("#areas .tag.on")].map(t => t.textContent.trim());
+    // Áreas de conflicto
+    activeSession.areas = [...document.querySelectorAll("#areas .tag.on")].map(t => t.textContent.trim());
 
-  // Escala de compromiso
-  const selSnum = document.querySelector("#sc1 .snum.on");
-  activeSession.sc1 = selSnum ? parseInt(selSnum.textContent.trim()) : "";
+    // Escala de compromiso
+    const selSnum = document.querySelector("#sc1 .snum.on");
+    activeSession.sc1 = selSnum ? parseInt(selSnum.textContent.trim()) : "";
+  }
 
   // Sincronizar preguntas dinámicas
   activeSession.questions = [];
@@ -144,19 +228,37 @@ function renderQuestions() {
   const container = document.getElementById("questions-container");
   if (!container) return;
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get('id');
+  const isSessionLink = !!sessionId;
+
   container.innerHTML = "";
   activeSession.questions.forEach((item, idx) => {
     const card = document.createElement("div");
     card.className = "q-card";
-    card.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 0.5rem;">
-        <input type="text" class="q-input" value="${item.q}" placeholder="Escribe la pregunta..." style="font-weight: 600; width: 100%; border: none; border-bottom: 1px solid var(--border-color); background: transparent; padding: 4px 0; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-body);">
-        <button type="button" class="action-btn del" onclick="deleteQuestion(${idx})" title="Eliminar pregunta" style="background: none; border: none; color: var(--danger); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; padding: 4px;">
-          <i class="ti ti-trash"></i>
-        </button>
-      </div>
-      <textarea class="q-textarea" placeholder="Escriban su respuesta aquí..." style="width: 100%; min-height: 80px;">${item.a}</textarea>
-    `;
+    
+    if (isSessionLink) {
+      // Si es un link de sesión para la pareja, mostrar la pregunta como texto (no editable) y sin botón de eliminar
+      card.innerHTML = `
+        <div style="margin-bottom: 0.5rem;">
+          <label style="font-weight: 600; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-primary); display: block;">
+            ${idx + 1}. ${item.q}
+          </label>
+          <input type="hidden" class="q-input" value="${item.q}">
+        </div>
+        <textarea class="q-textarea" placeholder="Escriban su respuesta aquí..." style="width: 100%; min-height: 100px;">${item.a || ''}</textarea>
+      `;
+    } else {
+      card.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 0.5rem;">
+          <input type="text" class="q-input" value="${item.q}" placeholder="Escribe la pregunta..." style="font-weight: 600; width: 100%; border: none; border-bottom: 1px solid var(--border-color); background: transparent; padding: 4px 0; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-body);">
+          <button type="button" class="action-btn del" onclick="deleteQuestion(${idx})" title="Eliminar pregunta" style="background: none; border: none; color: var(--danger); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; padding: 4px;">
+            <i class="ti ti-trash"></i>
+          </button>
+        </div>
+        <textarea class="q-textarea" placeholder="Escriban su respuesta aquí..." style="width: 100%; min-height: 80px;">${item.a}</textarea>
+      `;
+    }
     container.appendChild(card);
   });
 }
@@ -186,18 +288,50 @@ function deleteQuestion(idx) {
 async function submitPatientForm() {
   syncFormToActiveSession();
 
-  if (!activeSession.n1 || !activeSession.n2) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get('id');
+
+  if (!sessionId && (!activeSession.n1 || !activeSession.n2)) {
     alert("Por favor, completen los nombres de ambos integrantes.");
     go(0);
     return;
   }
 
   try {
-    // Forzar el estado en "Pendiente" al enviar por el paciente
-    activeSession.status = "Pendiente";
-    
-    // Guardar en la base de datos (conmuta automáticamente a LocalStorage si está offline)
-    await saveSession(activeSession);
+    if (sessionId) {
+      if (onlineMode) {
+        const response = await fetch('api/sessions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id: sessionId,
+            questions: activeSession.questions
+          })
+        });
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || "Error al enviar respuestas.");
+        }
+      } else {
+        // Modo offline
+        const localData = localStorage.getItem('TEACOMPANO_SESSIONS');
+        if (localData) {
+          const list = JSON.parse(localData);
+          const idx = list.findIndex(s => s.id === sessionId);
+          if (idx !== -1) {
+            list[idx].questions = activeSession.questions;
+            list[idx].status = "Completado";
+            localStorage.setItem('TEACOMPANO_SESSIONS', JSON.stringify(list));
+          }
+        }
+      }
+    } else {
+      // Forzar el estado en "Pendiente" al enviar por el paciente
+      activeSession.status = "Pendiente";
+      await saveSession(activeSession);
+    }
     
     // Mostrar pantalla de éxito y limpiar
     showSuccessScreen();
@@ -210,6 +344,10 @@ async function submitPatientForm() {
  * Reemplaza el formulario con un mensaje de éxito estético
  */
 function showSuccessScreen() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get('id');
+  const isSessionLink = !!sessionId;
+
   const wizard = document.getElementById("wizard-section");
   if (wizard) {
     wizard.innerHTML = `
@@ -217,9 +355,11 @@ function showSuccessScreen() {
         <div style="width: 80px; height: 80px; background-color: var(--success-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--success); font-size: 2.5rem; box-shadow: var(--shadow-md);">
           <i class="ti ti-circle-check"></i>
         </div>
-        <h2 style="font-family: var(--font-display); color: var(--sage-dark); font-size: 1.8rem; font-weight: 700;">¡Formulario Enviado con Éxito!</h2>
+        <h2 style="font-family: var(--font-display); color: var(--sage-dark); font-size: 1.8rem; font-weight: 700;">¡Respuestas Enviadas con Éxito!</h2>
         <p style="color: var(--text-muted); max-width: 500px; font-size: 0.95rem; line-height: 1.6;">
-          Gracias por completar sus datos iniciales. Su terapeuta ya tiene acceso a esta información para nuestra sesión de terapia de pareja.
+          ${isSessionLink 
+            ? "Muchas gracias por responder a las preguntas de esta sesión. Sus respuestas ya han sido enviadas a su terapeuta." 
+            : "Gracias por completar sus datos iniciales. Su terapeuta ya tiene acceso a esta información para nuestra sesión de terapia de pareja."}
         </p>
         <div class="divider" style="width: 100%; max-width: 300px; margin: 1rem 0;"></div>
         <p style="font-size: 0.8rem; color: var(--text-light); font-weight: 500;">

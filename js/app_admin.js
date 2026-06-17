@@ -149,7 +149,6 @@ async function loadAdminDashboard() {
           </td>
         </tr>
       `;
-    } else {
       pendingTbody.innerHTML = pending.map(s => {
         return `
           <tr>
@@ -160,6 +159,9 @@ async function loadAdminDashboard() {
             <td style="text-align: center;"><span class="chip chip-amber"><i class="ti ti-loader"></i> Recibido / Pendiente</span></td>
             <td>
               <div class="actions">
+                <button class="action-btn" title="Compartir enlace de preguntas" onclick="openShareModal('${s.id}')" style="background-color: var(--teal-light); color: var(--teal-dark);">
+                  <i class="ti ti-share"></i>
+                </button>
                 <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="loadSessionEditor('${s.id}')">
                   <i class="ti ti-pencil-edit"></i> Completar Sesión
                 </button>
@@ -214,6 +216,9 @@ async function loadAdminDashboard() {
             <td>
               <div class="actions">
                 ${plusButton}
+                <button class="action-btn" title="Compartir enlace" onclick="openShareModal('${s.id}')" style="background-color: var(--teal-light); color: var(--teal-dark);">
+                  <i class="ti ti-share"></i>
+                </button>
                 <button class="action-btn" title="Editar Sesión" onclick="loadSessionEditor('${s.id}')">
                   <i class="ti ti-edit"></i>
                 </button>
@@ -800,16 +805,30 @@ async function handleImportJSON(event) {
   event.target.value = "";
 }
 
+let currentShareSessionId = null;
+
 // ── MODAL DE COMPARTIDO ──
-function openShareModal() {
+function openShareModal(id = null) {
+  currentShareSessionId = id;
   document.getElementById("share-modal").style.display = "flex";
   
-  // Rellenar terapeuta por defecto si hay sesiones
+  const coupleInput = document.getElementById("share-couple-name");
   const therapistInput = document.getElementById("share-therapist-name");
-  if (therapistInput && !therapistInput.value && sessions.length > 0) {
-    const completed = sessions.filter(s => s.ter);
-    if (completed.length > 0) {
-      therapistInput.value = completed[0].ter;
+  
+  if (id) {
+    // Buscar la sesión
+    const s = sessions.find(sess => sess.id === id);
+    if (s) {
+      if (coupleInput) coupleInput.value = `${s.n1} y ${s.n2}`;
+      if (therapistInput && s.ter) therapistInput.value = s.ter;
+    }
+  } else {
+    if (coupleInput) coupleInput.value = "";
+    if (therapistInput && !therapistInput.value && sessions.length > 0) {
+      const completed = sessions.filter(s => s.ter);
+      if (completed.length > 0) {
+        therapistInput.value = completed[0].ter;
+      }
     }
   }
   
@@ -830,7 +849,15 @@ function updateShareLinks() {
   // Calcular la URL pública del formulario (index.html en el mismo servidor)
   const baseLink = window.location.origin + window.location.pathname.replace("admin.html", "index.html");
   
-  const textMessage = `Hola ${couple}!\n\nPara nuestra sesión de terapia de pareja en Salud Mental 360 · TeAcompaño, por favor ingresen al siguiente enlace para completar su formulario de ingreso inicial:\n🔗 ${baseLink}\n\nNos vemos pronto en la sesión.\nAtentamente,\n${therapist}`;
+  let textMessage = "";
+  if (currentShareSessionId) {
+    const s = sessions.find(sess => sess.id === currentShareSessionId);
+    const ns = s ? s.ns : "X";
+    const fullLink = `${baseLink}?id=${currentShareSessionId}`;
+    textMessage = `Hola ${couple}!\n\nPara su Sesión N° ${ns} de terapia de pareja en Salud Mental 360 · TeAcompaño, por favor ingresen al siguiente enlace para responder a las preguntas de reflexión:\n🔗 ${fullLink}\n\nNos vemos pronto en la sesión.\nAtentamente,\n${therapist}`;
+  } else {
+    textMessage = `Hola ${couple}!\n\nPara nuestra sesión de terapia de pareja en Salud Mental 360 · TeAcompaño, por favor ingresen al siguiente enlace para completar su formulario de ingreso inicial:\n🔗 ${baseLink}\n\nNos vemos pronto en la sesión.\nAtentamente,\n${therapist}`;
+  }
   
   document.getElementById("share-message-preview").textContent = textMessage;
 }
@@ -854,4 +881,42 @@ function shareViaEmail() {
   
   const mailUrl = `mailto:?subject=${subject}&body=${body}`;
   window.open(mailUrl, '_blank');
+}
+
+/**
+ * Guardar sesión como Pendiente y compartir enlace
+ */
+async function saveAndShareQuestions() {
+  syncFormToActiveSession();
+  
+  if (!activeSession.n1 || !activeSession.n2) {
+    alert("Faltan completar datos demográficos obligatorios (Nombres).");
+    return;
+  }
+
+  try {
+    if (!activeSession.id) {
+      activeSession.id = "session_" + Date.now();
+    }
+    
+    // Forzar estado como Pendiente
+    activeSession.status = "Pendiente";
+    
+    await saveSession(activeSession, verifiedPassword);
+    
+    // Recargar localmente
+    sessions = await fetchAllSessions(verifiedPassword);
+    
+    showToast("Sesión guardada en estado Pendiente.");
+    
+    // Cerrar editor y volver al dashboard
+    document.getElementById("wizard-section").style.display = "none";
+    document.getElementById("dashboard-section").style.display = "block";
+    loadAdminDashboard();
+    
+    // Abrir modal de compartir
+    openShareModal(activeSession.id);
+  } catch (error) {
+    alert("Error al guardar y compartir: " + error.message);
+  }
 }

@@ -33,10 +33,58 @@ export async function onRequest(context) {
     );
   }
 
-  // 1. OBTENER SESIONES (GET) - Protegido
+  // 1. OBTENER SESIONES (GET) - Protegido para listado, público para ID específico (filtrado)
   if (method === "GET") {
     const authHeader = request.headers.get("Authorization");
-    if (authHeader !== ADMIN_PASSWORD) {
+    const sessionId = url.searchParams.get("id");
+    const isAdmin = authHeader === ADMIN_PASSWORD;
+
+    // A. Consultar una sesión específica por ID (Pública o de Admin)
+    if (sessionId) {
+      try {
+        const val = await KV.get(`session_${sessionId}`);
+        if (!val) {
+          return new Response(
+            JSON.stringify({ error: "Sesión no encontrada." }),
+            { status: 404, headers: corsHeaders }
+          );
+        }
+        
+        const session = JSON.parse(val);
+        
+        if (isAdmin) {
+          // Si es admin, retornar la sesión completa
+          return new Response(JSON.stringify(session), { status: 200, headers: corsHeaders });
+        } else {
+          // Si es público (pareja), sanitizar para ocultar notas privadas del terapeuta
+          const sanitized = {
+            id: session.id,
+            n1: session.n1,
+            n2: session.n2,
+            ns: session.ns,
+            fec: session.fec,
+            ter: session.ter,
+            questions: session.questions && session.questions.length > 0 ? session.questions : [
+              { q: "¿Qué esperan lograr activamente al venir a terapia?", a: session.q1 || "" },
+              { q: "¿Cuándo fue el último periodo donde se sintieron bien en pareja?", a: session.q2 || "" },
+              { q: "¿Cómo suelen manejar el conflicto? (¿Quién persigue y quién se distancia?)", a: session.q3 || "" },
+              { q: "¿Qué sienten que la otra persona no logra entender de ustedes?", a: session.q4 || "" },
+              { q: "¿Qué cosas positivas los mantienen unidos aún hoy?", a: session.q5 || "" }
+            ],
+            status: session.status
+          };
+          return new Response(JSON.stringify(sanitized), { status: 200, headers: corsHeaders });
+        }
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ error: "Error al leer sesión: " + err.message }),
+          { status: 500, headers: corsHeaders }
+        );
+      }
+    }
+
+    // B. Listar todas las sesiones (Solo Admin)
+    if (!isAdmin) {
       return new Response(
         JSON.stringify({ error: "No autorizado. Ingrese la clave administrativa correcta." }),
         { status: 401, headers: corsHeaders }
@@ -74,7 +122,7 @@ export async function onRequest(context) {
     }
   }
 
-  // 2. GUARDAR / ACTUALIZAR SESIÓN (POST) - Público para creación, protegido para edición
+  // 2. GUARDAR / ACTUALIZAR SESIÓN (POST) - Público para creación, protegido para edición (excepto respuestas de pareja)
   if (method === "POST") {
     try {
       const body = await request.json();
@@ -89,11 +137,30 @@ export async function onRequest(context) {
           body.status = "Pendiente";
         }
       } else {
-        // Si se está editando una sesión existente (tiene ID), requerir autenticación
+        // Si se está editando una sesión existente (tiene ID)
         if (!isAdmin) {
+          // ¡PACIENTE RESPONDIENDO SUS PREGUNTAS!
+          // Leemos la sesión existente en KV para no perder observaciones o datos clínicos
+          const val = await KV.get(`session_${body.id}`);
+          if (!val) {
+            return new Response(
+              JSON.stringify({ error: "Sesión no encontrada para actualizar." }),
+              { status: 404, headers: corsHeaders }
+            );
+          }
+          const existing = JSON.parse(val);
+
+          // Mezclar: Mantener lo que el terapeuta ya rellenó, pero actualizar las respuestas
+          existing.questions = body.questions;
+          // Actualizar estado a "Completado" al ser enviado por el paciente
+          existing.status = "Completado";
+
+          // Usar el registro mezclado para guardar
+          await KV.put(`session_${existing.id}`, JSON.stringify(existing));
+
           return new Response(
-            JSON.stringify({ error: "No autorizado para editar registros clínicos." }),
-            { status: 401, headers: corsHeaders }
+            JSON.stringify({ success: true, session: existing }),
+            { status: 200, headers: corsHeaders }
           );
         }
       }
