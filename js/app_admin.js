@@ -14,7 +14,7 @@ let activeSession = {
   m1: "", m2: "",
   areas: [],
   dur: "", prev: "", sc1: "",
-  q1: "", q2: "", q3: "", q4: "", q5: "",
+  questions: [],
   enf: [],
   obs: "", tar: "",
   dtot: 60, hi: "09:00",
@@ -200,6 +200,9 @@ async function loadAdminDashboard() {
             <td>${s.frec || '—'}</td>
             <td>
               <div class="actions">
+                <button class="action-btn" title="Nueva Sesión" onclick="createNewSessionFromExisting('${s.id}')" style="background-color: var(--sage-light); color: var(--sage-dark);">
+                  <i class="ti ti-plus"></i>
+                </button>
                 <button class="action-btn" title="Editar Sesión" onclick="loadSessionEditor('${s.id}')">
                   <i class="ti ti-edit"></i>
                 </button>
@@ -254,7 +257,7 @@ async function loadSessionEditor(id) {
 
   // Llenar inputs de texto
   const fields = ['n1', 'n2', 'a1', 'a2', 'rel', 'est', 'hij', 'ns', 'fec', 'ter', 
-                  'm1', 'm2', 'dur', 'prev', 'q1', 'q2', 'q3', 'q4', 'q5', 'obs', 'tar',
+                  'm1', 'm2', 'dur', 'prev', 'obs', 'tar',
                   'dtot', 'hi', 't1', 't2', 't3', 't4', 'prox', 'frec'];
   
   fields.forEach(f => {
@@ -263,6 +266,10 @@ async function loadSessionEditor(id) {
       el.value = activeSession[f] !== undefined ? activeSession[f] : "";
     }
   });
+
+  // Cargar y renderizar preguntas dinámicas
+  activeSession.questions = getSessionQuestions(activeSession);
+  renderQuestions();
 
   // Si no tiene terapeuta asignado aún (ficha recién enviada por paciente), asignar terapeuta vacío o último
   const terInput = document.getElementById("ter");
@@ -384,7 +391,7 @@ function go(stepIdx) {
  */
 function syncFormToActiveSession() {
   const fields = ['n1', 'n2', 'a1', 'a2', 'rel', 'est', 'hij', 'ns', 'fec', 'ter', 
-                  'm1', 'm2', 'dur', 'prev', 'q1', 'q2', 'q3', 'q4', 'q5', 'obs', 'tar',
+                  'm1', 'm2', 'dur', 'prev', 'obs', 'tar',
                   'dtot', 'hi', 't1', 't2', 't3', 't4', 'prox', 'frec'];
   
   fields.forEach(f => {
@@ -403,6 +410,19 @@ function syncFormToActiveSession() {
   
   const selSnum = document.querySelector("#sc1 .snum.on");
   activeSession.sc1 = selSnum ? parseInt(selSnum.textContent.trim()) : "";
+
+  // Sincronizar preguntas dinámicas
+  activeSession.questions = [];
+  document.querySelectorAll("#questions-container .q-card").forEach(card => {
+    const qInput = card.querySelector(".q-input");
+    const aTextarea = card.querySelector(".q-textarea");
+    if (qInput) {
+      activeSession.questions.push({
+        q: qInput.value,
+        a: aTextarea ? aTextarea.value : ""
+      });
+    }
+  });
 }
 
 /**
@@ -530,15 +550,164 @@ function getSummaryAIPrompt() {
   const areasStr = activeSession.areas.length > 0 ? activeSession.areas.join(", ") : "Ninguna";
   const enfStr = activeSession.enf.length > 0 ? activeSession.enf.join(", ") : "Ninguno";
   
+  let qText = "";
+  if (activeSession.questions && activeSession.questions.length > 0) {
+    activeSession.questions.forEach((q, i) => {
+      qText += `Pregunta ${i+1}: "${q.q}" -> Respuesta: "${q.a}". `;
+    });
+  }
+  
   return `Pareja: ${n1} (${activeSession.a1 || '—'} años) y ${n2} (${activeSession.a2 || '—'} años). ` + 
          `Tiempo de relación: ${activeSession.rel || '—'}. Estado civil: ${activeSession.est || '—'}. Hijos: ${activeSession.hij || '—'}. ` +
          `Sesión clínica N° ${activeSession.ns || 1} de fecha ${activeSession.fec || '—'}. Terapeuta: ${activeSession.ter || '—'}. ` +
          `Motivo de ${n1}: "${activeSession.m1 || '—'}". Motivo de ${n2}: "${activeSession.m2 || '—'}". ` +
          `Áreas de conflicto: ${areasStr}. Compromiso de pareja: ${activeSession.sc1 || '—'}/10. Duración del conflicto: ${activeSession.dur || '—'}. ` +
-         `Expectativa: "${activeSession.q1 || '—'}". Último momento de bienestar: "${activeSession.q2 || '—'}". ` +
-         `Resolución de conflictos: "${activeSession.q3 || '—'}". No comprendido: "${activeSession.q4 || '—'}". ` +
-         `Puntos de unión: "${activeSession.q5 || '—'}". Enfoque aplicado: ${enfStr}. ` +
+         qText +
+         `Enfoque aplicado: ${enfStr}. ` +
          `Observaciones clínicas: "${activeSession.obs || '—'}". Tarea escolar asignada: "${activeSession.tar || '—'}".`;
+}
+
+/**
+ * Helper para obtener preguntas dinámicas con fallback a q1..q5
+ */
+function getSessionQuestions(s) {
+  if (s.questions && s.questions.length > 0) {
+    return s.questions;
+  }
+  return [
+    { q: "¿Qué esperan lograr activamente al venir a terapia?", a: s.q1 || "" },
+    { q: "¿Cuándo fue el último periodo donde se sintieron bien en pareja?", a: s.q2 || "" },
+    { q: "¿Cómo suelen manejar el conflicto? (¿Quién persigue y quién se distancia?)", a: s.q3 || "" },
+    { q: "¿Qué sienten que la otra persona no logra entender de ustedes?", a: s.q4 || "" },
+    { q: "¿Qué cosas positivas los mantienen unidos aún hoy?", a: s.q5 || "" }
+  ];
+}
+
+/**
+ * Renderiza las preguntas dinámicas en el editor del admin
+ */
+function renderQuestions() {
+  const container = document.getElementById("questions-container");
+  if (!container) return;
+
+  container.innerHTML = "";
+  activeSession.questions.forEach((item, idx) => {
+    const card = document.createElement("div");
+    card.className = "q-card";
+    card.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 0.5rem;">
+        <input type="text" class="q-input" value="${item.q}" placeholder="Escribe la pregunta..." style="font-weight: 600; width: 100%; border: none; border-bottom: 1px solid var(--border-color); background: transparent; padding: 4px 0; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-body);">
+        <button type="button" class="action-btn del" onclick="deleteQuestion(${idx})" title="Eliminar pregunta" style="background: none; border: none; color: var(--danger); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; padding: 4px;">
+          <i class="ti ti-trash"></i>
+        </button>
+      </div>
+      <textarea class="q-textarea" placeholder="Respuesta del paciente/terapeuta..." style="width: 100%; min-height: 80px;">${item.a}</textarea>
+    `;
+    container.appendChild(card);
+  });
+}
+
+/**
+ * Agrega pregunta en el panel de administración
+ */
+function addQuestionField() {
+  syncFormToActiveSession();
+  activeSession.questions.push({ q: "", a: "" });
+  renderQuestions();
+}
+
+/**
+ * Elimina pregunta en el panel de administración
+ */
+function deleteQuestion(idx) {
+  syncFormToActiveSession();
+  activeSession.questions.splice(idx, 1);
+  renderQuestions();
+}
+
+/**
+ * Crea una nueva sesión clínica (S2, S3, etc.) clonando los datos demográficos de una pareja existente
+ */
+async function createNewSessionFromExisting(id) {
+  const allSess = await fetchAllSessions(verifiedPassword);
+  const session = allSess.find(s => s.id === id);
+  if (!session) return;
+
+  // Clonamos demográficos pero limpiamos campos específicos de la sesión individual
+  activeSession = {
+    id: "", // Vacío para crear nueva clave en KV/LocalStorage
+    n1: session.n1 || "",
+    n2: session.n2 || "",
+    a1: session.a1 || "",
+    a2: session.a2 || "",
+    rel: session.rel || "",
+    est: session.est || "",
+    hij: session.hij || "",
+    ns: (parseInt(session.ns) || 1) + 1, // Auto-incrementar número de sesión
+    fec: new Date().toISOString().split('T')[0], // Fecha actual
+    ter: session.ter || "",
+    m1: "", m2: "", // Vaciar motivos
+    areas: session.areas || [], // Mantener áreas de conflicto detectadas como base
+    dur: session.dur || "",
+    prev: session.prev || "",
+    sc1: "", // Vaciar compromiso (a recalcular)
+    questions: (session.questions && session.questions.length > 0) ? 
+               session.questions.map(q => ({ q: q.q, a: "" })) : // Copiar preguntas pero vaciar respuestas
+               [
+                 { q: "¿Qué esperan lograr activamente al venir a terapia?", a: "" },
+                 { q: "¿Cuándo fue el último periodo donde se sintieron bien en pareja?", a: "" },
+                 { q: "¿Cómo suelen manejar el conflicto? (¿Quién persigue y quién se distancia?)", a: "" },
+                 { q: "¿Qué sienten que la otra persona no logra entender de ustedes?", a: "" },
+                 { q: "¿Qué cosas positivas los mantienen unidos aún hoy?", a: "" }
+               ],
+    enf: session.enf || [], // Mantener enfoques terapéuticos aplicados
+    obs: "", // Vaciar observaciones para escribir nuevas
+    tar: "", // Vaciar tarea asignada
+    dtot: 60, hi: "09:00", // Tiempos iniciales
+    t1: 10, t2: 20, t3: 20, t4: 10,
+    prox: "", frec: session.frec || "Semanal",
+    status: "Completado"
+  };
+
+  // Llenar inputs de texto
+  const fields = ['n1', 'n2', 'a1', 'a2', 'rel', 'est', 'hij', 'ns', 'fec', 'ter', 
+                  'm1', 'm2', 'dur', 'prev', 'obs', 'tar',
+                  'dtot', 'hi', 't1', 't2', 't3', 't4', 'prox', 'frec'];
+  
+  fields.forEach(f => {
+    const el = document.getElementById(f);
+    if (el) {
+      el.value = activeSession[f] !== undefined ? activeSession[f] : "";
+    }
+  });
+
+  // Marcar tags de áreas
+  document.querySelectorAll("#areas .tag").forEach(t => {
+    const text = t.textContent.trim();
+    t.classList.toggle("on", activeSession.areas.includes(text));
+  });
+
+  // Marcar tags de enfoques
+  document.querySelectorAll("#enf .tag").forEach(t => {
+    const text = t.textContent.trim();
+    t.classList.toggle("on", activeSession.enf.includes(text));
+  });
+
+  // Desmarcar escala de compromiso
+  document.querySelectorAll("#sc1 .snum").forEach(s => {
+    s.classList.remove("on");
+  });
+
+  // Cargar y renderizar preguntas dinámicas vacías
+  renderQuestions();
+
+  // Abrir editor
+  document.getElementById("dashboard-section").style.display = "none";
+  document.getElementById("wizard-section").style.display = "block";
+  
+  calcT();
+  go(0);
+  showToast(`Creando Sesión ${activeSession.ns} para ${activeSession.n1} & ${activeSession.n2}...`);
 }
 
 /**

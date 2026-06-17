@@ -229,29 +229,14 @@
             <span>Tómense su tiempo para responder a estas preguntas de manera conjunta o sincera. Ayudará al terapeuta a enfocar la sesión.</span>
           </div>
 
-          <div class="q-card">
-            <div class="q-label"><i class="ti ti-target-arrow"></i> ¿Qué esperan lograr activamente al asistir a esta terapia?</div>
-            <textarea id="q1" placeholder="Compartan sus objetivos conjuntos o individuales..."></textarea>
+          <div id="questions-container" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Las preguntas dinámicas se cargarán aquí -->
           </div>
           
-          <div class="q-card">
-            <div class="q-label"><i class="ti ti-hourglass-empty"></i> ¿Cuándo fue el último periodo en el que se sintieron felices en pareja?</div>
-            <textarea id="q2" placeholder="Describan un momento o etapa de bienestar mutuo..."></textarea>
-          </div>
-          
-          <div class="q-card">
-            <div class="q-label"><i class="ti ti-arrows-double-ne-sw"></i> ¿Cómo suelen reaccionar y manejar los desacuerdos o discusiones?</div>
-            <textarea id="q3" placeholder="Ej. Uno se calla y el otro reclama, nos distanciamos varios días, etc..."></textarea>
-          </div>
-          
-          <div class="q-card">
-            <div class="q-label"><i class="ti ti-viewfinder"></i> ¿Qué sienten que la otra persona no logra entender o valorar de ustedes?</div>
-            <textarea id="q4" placeholder="¿Qué les gustaría que su pareja comprendiera de su postura?"></textarea>
-          </div>
-          
-          <div class="q-card">
-            <div class="q-label"><i class="ti ti-heart-filled"></i> ¿Qué aspectos positivos los mantiene unidos y valoran hoy de su relación?</div>
-            <textarea id="q5" placeholder="¿Qué rescatarías o qué te sigue uniendo a tu pareja?..."></textarea>
+          <div style="margin-top: 1.5rem; display: flex; justify-content: center;">
+            <button type="button" class="btn btn-sage" onclick="addQuestionField()" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; border-radius: 20px;">
+              <i class="ti ti-plus"></i> Agregar Pregunta Libre
+            </button>
           </div>
           
           <div class="btn-row">

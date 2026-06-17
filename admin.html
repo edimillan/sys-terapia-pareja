@@ -323,29 +323,14 @@
           <div class="section-pill"><i class="ti ti-message-dots"></i><span>Respuestas e Intervención Interna</span></div>
           
           <!-- Preguntas llenadas por la pareja -->
-          <div class="q-card">
-            <div class="q-label"><i class="ti ti-target-arrow"></i> ¿Qué esperan lograr activamente al venir a terapia?</div>
-            <textarea id="q1" placeholder="Respuestas del paciente..."></textarea>
+          <div id="questions-container" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Las preguntas dinámicas se cargarán aquí -->
           </div>
           
-          <div class="q-card">
-            <div class="q-label"><i class="ti ti-hourglass-empty"></i> ¿Cuándo fue el último periodo donde se sintieron bien en pareja?</div>
-            <textarea id="q2" placeholder="Respuestas del paciente..."></textarea>
-          </div>
-          
-          <div class="q-card">
-            <div class="q-label"><i class="ti ti-arrows-double-ne-sw"></i> ¿Cómo suelen manejar el conflicto? (¿Quién persigue y quién se distancia?)</div>
-            <textarea id="q3" placeholder="Respuestas del paciente..."></textarea>
-          </div>
-          
-          <div class="q-card">
-            <div class="q-label"><i class="ti ti-viewfinder"></i> ¿Qué sienten que la otra persona no logra entender de ustedes?</div>
-            <textarea id="q4" placeholder="Respuestas del paciente..."></textarea>
-          </div>
-          
-          <div class="q-card">
-            <div class="q-label"><i class="ti ti-heart-filled"></i> ¿Qué cosas positivas los mantienen unidos aún hoy?</div>
-            <textarea id="q5" placeholder="Respuestas del paciente..."></textarea>
+          <div style="margin-top: 1.5rem; display: flex; justify-content: center; margin-bottom: 1.5rem;">
+            <button type="button" class="btn btn-sage" onclick="addQuestionField()" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; border-radius: 20px;">
+              <i class="ti ti-plus"></i> Agregar Pregunta Libre
+            </button>
           </div>
           
           <div class="divider"></div>

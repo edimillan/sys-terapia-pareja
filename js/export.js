@@ -187,15 +187,24 @@ function exportPDF(s) {
   doc.setFontSize(9.5);
   doc.text('Preguntas clave de la sesión', 18, 204);
 
+  // Cargar preguntas dinámicas (con fallback)
+  const questions = s.questions && s.questions.length > 0 ? s.questions : [
+    { q: "¿Qué esperan lograr activamente al venir a terapia?", a: s.q1 || "" },
+    { q: "¿Cuándo fue el último periodo donde se sintieron bien en pareja?", a: s.q2 || "" },
+    { q: "¿Cómo suelen manejar el conflicto? (¿Quién persigue y quién se distancia?)", a: s.q3 || "" },
+    { q: "¿Qué sienten que la otra persona no logra entender de ustedes?", a: s.q4 || "" },
+    { q: "¿Qué cosas positivas los mantienen unidos aún hoy?", a: s.q5 || "" }
+  ];
+
   // Columnas asimétricas de Preguntas (cabecera naranja y fondo crema naranja)
   // Columna 1 (Izquierda): P1, P2 y P3
-  drawQuestionBox(15, 210, 88, 19, 'P1 ¿Qué esperan lograr con esta terapia?', s.q1);
-  drawQuestionBox(15, 232, 88, 19, 'P2 ¿Cuándo fue el último momento en que se sintieron bien?', s.q2);
-  drawQuestionBox(15, 254, 88, 22, 'P3 ¿Cómo manejan los conflictos? ¿Quién cede, quién se aleja?', s.q3);
+  if (questions[0]) drawQuestionBox(15, 210, 88, 19, 'P1 ' + questions[0].q, questions[0].a);
+  if (questions[1]) drawQuestionBox(15, 232, 88, 19, 'P2 ' + questions[1].q, questions[1].a);
+  if (questions[2]) drawQuestionBox(15, 254, 88, 22, 'P3 ' + questions[2].q, questions[2].a);
 
   // Columna 2 (Derecha): P4 y P5
-  drawQuestionBox(107, 210, 88, 31, 'P4 ¿Hay algo que sientes que el/la otro/a no comprende de ti?', s.q4);
-  drawQuestionBox(107, 245, 88, 31, 'P5 ¿Qué los une aún? ¿Qué valoran de la relación?', s.q5);
+  if (questions[3]) drawQuestionBox(107, 210, 88, 31, 'P4 ' + questions[3].q, questions[3].a);
+  if (questions[4]) drawQuestionBox(107, 245, 88, 31, 'P5 ' + questions[4].q, questions[4].a);
 
   // Pie de Página - Página 1
   doc.setDrawColor(...cBorder);
@@ -344,51 +353,31 @@ function exportPDF(s) {
   drawInputBox(80, 160, 58, 10, 'FRECUENCIA', s.frec);
   drawInputBox(143, 160, 52, 10, 'HORA', s.hi || '—');
 
-  // 4. SECCIÓN: CIERRE DE SESIÓN (FIRMAS)
-  doc.setFillColor(241, 246, 242);
-  doc.roundedRect(15, 177, contentW, 7, 2, 2, 'F');
-  doc.setTextColor(...cSageDark);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
-  doc.text('Cierre de sesión', 18, 182);
+  // 4. SECCIÓN: PREGUNTAS ADICIONALES (si existen > 5)
+  const questionsList = s.questions && s.questions.length > 0 ? s.questions : [
+    { q: "¿Qué esperan lograr activamente al venir a terapia?", a: s.q1 || "" },
+    { q: "¿Cuándo fue el último periodo donde se sintieron bien en pareja?", a: s.q2 || "" },
+    { q: "¿Cómo suelen manejar el conflicto? (¿Quién persigue y quién se distancia?)", a: s.q3 || "" },
+    { q: "¿Qué sienten que la otra persona no logra entender de ustedes?", a: s.q4 || "" },
+    { q: "¿Qué cosas positivas los mantienen unidos aún hoy?", a: s.q5 || "" }
+  ];
 
-  // Líneas de firma ordenadas en 3 columnas
-  const sigY = 192;
-  const lineY = 210;
-  
-  // Firma Persona 1
-  doc.setTextColor(...cSageDark);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.text('Firma — Persona 1', 15, sigY);
-  doc.setDrawColor(...cTextMuted);
-  doc.line(15, lineY, 71, lineY);
-  doc.setTextColor(...cText);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.text(`Nombre: ${s.n1 || '________________'}`, 15, lineY + 5);
+  if (questionsList.length > 5) {
+    doc.setFillColor(241, 246, 242);
+    doc.roundedRect(15, 177, contentW, 7, 2, 2, 'F');
+    doc.setTextColor(...cSageDark);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.text('Preguntas adicionales de la sesión', 18, 182);
 
-  // Firma Persona 2
-  doc.setTextColor(...cSageDark);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.text('Firma — Persona 2', 77, sigY);
-  doc.line(77, lineY, 133, lineY);
-  doc.setTextColor(...cText);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.text(`Nombre: ${s.n2 || '________________'}`, 77, lineY + 5);
-
-  // Firma Terapeuta
-  doc.setTextColor(...cSageDark);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.text('Firma — Terapeuta', 139, sigY);
-  doc.line(139, lineY, 195, lineY);
-  doc.setTextColor(...cText);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.text('Reg. / CMP: ________________', 139, lineY + 5);
+    let extraY = 188;
+    for (let i = 5; i < questionsList.length; i++) {
+      if (extraY + 16 > 275) break; // Evitar salir de la página
+      const qObj = questionsList[i];
+      drawQuestionBox(15, extraY, contentW, 16, `P${i+1} ${qObj.q}`, qObj.a);
+      extraY += 20;
+    }
+  }
 
   // Pie de Página - Página 2
   doc.setDrawColor(...cBorder);

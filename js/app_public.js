@@ -12,13 +12,22 @@ let activeSession = {
   m1: "", m2: "",
   areas: [],
   dur: "", prev: "", sc1: "",
-  q1: "", q2: "", q3: "", q4: "", q5: "",
+  questions: [
+    { q: "¿Qué esperan lograr activamente al asistir a esta terapia?", a: "" },
+    { q: "¿Cuándo fue el último periodo en el que se sintieron felices en pareja?", a: "" },
+    { q: "¿Cómo suelen reaccionar y manejar los desacuerdos o discusiones?", a: "" },
+    { q: "¿Qué sienten que la otra persona no logra entender o valorar de ustedes?", a: "" },
+    { q: "¿Qué aspectos positivos los mantiene unidos y valoran hoy de su relación?", a: "" }
+  ],
   status: "Pendiente"
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
   // Inicializar base de datos híbrida (offline/online)
   await initDatabase();
+
+  // Renderizar preguntas por defecto
+  renderQuestions();
 
   // Fecha de hoy por defecto para la ficha
   const today = new Date().toISOString().split('T')[0];
@@ -94,7 +103,7 @@ function go(stepIdx) {
  */
 function syncFormToActiveSession() {
   const fields = ['n1', 'n2', 'a1', 'a2', 'rel', 'est', 'hij', 'ns', 'fec', 'ter', 
-                  'm1', 'm2', 'dur', 'prev', 'q1', 'q2', 'q3', 'q4', 'q5'];
+                  'm1', 'm2', 'dur', 'prev'];
   
   fields.forEach(f => {
     const el = document.getElementById(f);
@@ -113,6 +122,62 @@ function syncFormToActiveSession() {
   // Escala de compromiso
   const selSnum = document.querySelector("#sc1 .snum.on");
   activeSession.sc1 = selSnum ? parseInt(selSnum.textContent.trim()) : "";
+
+  // Sincronizar preguntas dinámicas
+  activeSession.questions = [];
+  document.querySelectorAll("#questions-container .q-card").forEach(card => {
+    const qInput = card.querySelector(".q-input");
+    const aTextarea = card.querySelector(".q-textarea");
+    if (qInput) {
+      activeSession.questions.push({
+        q: qInput.value,
+        a: aTextarea ? aTextarea.value : ""
+      });
+    }
+  });
+}
+
+/**
+ * Renderiza la lista de preguntas dinámicas en el contenedor
+ */
+function renderQuestions() {
+  const container = document.getElementById("questions-container");
+  if (!container) return;
+
+  container.innerHTML = "";
+  activeSession.questions.forEach((item, idx) => {
+    const card = document.createElement("div");
+    card.className = "q-card";
+    card.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 0.5rem;">
+        <input type="text" class="q-input" value="${item.q}" placeholder="Escribe la pregunta..." style="font-weight: 600; width: 100%; border: none; border-bottom: 1px solid var(--border-color); background: transparent; padding: 4px 0; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-body);">
+        <button type="button" class="action-btn del" onclick="deleteQuestion(${idx})" title="Eliminar pregunta" style="background: none; border: none; color: var(--danger); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; padding: 4px;">
+          <i class="ti ti-trash"></i>
+        </button>
+      </div>
+      <textarea class="q-textarea" placeholder="Escriban su respuesta aquí..." style="width: 100%; min-height: 80px;">${item.a}</textarea>
+    `;
+    container.appendChild(card);
+  });
+}
+
+/**
+ * Agrega una pregunta vacía al formulario
+ */
+function addQuestionField() {
+  // Sincronizar primero para no perder cambios de lo escrito hasta ahora
+  syncFormToActiveSession();
+  activeSession.questions.push({ q: "", a: "" });
+  renderQuestions();
+}
+
+/**
+ * Elimina una pregunta por su índice
+ */
+function deleteQuestion(idx) {
+  syncFormToActiveSession();
+  activeSession.questions.splice(idx, 1);
+  renderQuestions();
 }
 
 /**
