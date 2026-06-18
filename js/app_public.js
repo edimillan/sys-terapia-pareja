@@ -244,58 +244,23 @@ function renderQuestions() {
   const container = document.getElementById("questions-container");
   if (!container) return;
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const sessionId = urlParams.get('id');
-  const isSessionLink = !!sessionId;
-
   container.innerHTML = "";
   activeSession.questions.forEach((item, idx) => {
     const card = document.createElement("div");
     card.className = "q-card";
     
-    if (isSessionLink) {
-      // Si es un link de sesión para la pareja, mostrar la pregunta como texto (no editable) y sin botón de eliminar
-      card.innerHTML = `
-        <div style="margin-bottom: 0.5rem;">
-          <label style="font-weight: 600; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-primary); display: block;">
-            ${idx + 1}. ${item.q}
-          </label>
-          <input type="hidden" class="q-input" value="${item.q}">
-        </div>
-        <textarea class="q-textarea" placeholder="Escriban su respuesta aquí..." style="width: 100%; min-height: 100px;">${item.a || ''}</textarea>
-      `;
-    } else {
-      card.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 0.5rem;">
-          <input type="text" class="q-input" value="${item.q}" placeholder="Escribe la pregunta..." style="font-weight: 600; width: 100%; border: none; border-bottom: 1px solid var(--border-color); background: transparent; padding: 4px 0; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-body);">
-          <button type="button" class="action-btn del" onclick="deleteQuestion(${idx})" title="Eliminar pregunta" style="background: none; border: none; color: var(--danger); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; padding: 4px;">
-            <i class="ti ti-trash"></i>
-          </button>
-        </div>
-        <textarea class="q-textarea" placeholder="Escriban su respuesta aquí..." style="width: 100%; min-height: 80px;">${item.a || ''}</textarea>
-      `;
-    }
+    // Las preguntas en el portal público son siempre de solo lectura para la pareja
+    card.innerHTML = `
+      <div style="margin-bottom: 0.5rem;">
+        <label style="font-weight: 600; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-primary); display: block;">
+          ${idx + 1}. ${item.q}
+        </label>
+        <input type="hidden" class="q-input" value="${item.q}">
+      </div>
+      <textarea class="q-textarea" placeholder="Escriban su respuesta aquí..." style="width: 100%; min-height: 100px;">${item.a || ''}</textarea>
+    `;
     container.appendChild(card);
   });
-}
-
-/**
- * Agrega una pregunta vacía al formulario
- */
-function addQuestionField() {
-  // Sincronizar primero para no perder cambios de lo escrito hasta ahora
-  syncFormToActiveSession();
-  activeSession.questions.push({ q: "", a: "" });
-  renderQuestions();
-}
-
-/**
- * Elimina una pregunta por su índice
- */
-function deleteQuestion(idx) {
-  syncFormToActiveSession();
-  activeSession.questions.splice(idx, 1);
-  renderQuestions();
 }
 
 /**
