@@ -902,6 +902,22 @@ async function handleImportJSON(event) {
   event.target.value = "";
 }
 
+async function triggerDatabaseClear() {
+  if (confirm("⚠️ ¿Está seguro de que desea eliminar todos los registros de parejas? Esta acción no se puede deshacer y borrará todo el historial clínico.")) {
+    if (confirm("🚨 ¿Confirmar eliminación completa de la base de datos?")) {
+      try {
+        const success = await clearAllSessions(verifiedPassword);
+        if (success) {
+          showToast("🗑️ Base de datos vaciada por completo.");
+          loadAdminDashboard();
+        }
+      } catch (error) {
+        alert(`Error al vaciar la base de datos: ${error.message}`);
+      }
+    }
+  }
+}
+
 let currentShareSessionId = null;
 
 // ── MODAL DE COMPARTIDO ──

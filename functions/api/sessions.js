@@ -238,11 +238,21 @@ export async function onRequest(context) {
     }
 
     try {
-      await KV.delete(`session_${sessionId}`);
-      return new Response(
-        JSON.stringify({ success: true, message: `Sesión ${sessionId} eliminada.` }),
-        { status: 200, headers: corsHeaders }
-      );
+      if (sessionId === "all") {
+        const list = await KV.list({ prefix: "session_" });
+        const deletePromises = list.keys.map(key => KV.delete(key.name));
+        await Promise.all(deletePromises);
+        return new Response(
+          JSON.stringify({ success: true, message: "Todos los registros eliminados." }),
+          { status: 200, headers: corsHeaders }
+        );
+      } else {
+        await KV.delete(`session_${sessionId}`);
+        return new Response(
+          JSON.stringify({ success: true, message: `Sesión ${sessionId} eliminada.` }),
+          { status: 200, headers: corsHeaders }
+        );
+      }
     } catch (err) {
       return new Response(
         JSON.stringify({ error: "Error al eliminar sesión: " + err.message }),

@@ -166,7 +166,36 @@ async function deleteSession(id, password = "") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
       return true;
     }
-    return false;
+  }
+}
+
+/**
+ * Elimina todos los registros de parejas de la base de datos.
+ * @param {string} password - Contraseña de administrador.
+ * @returns {Promise<boolean>} True si la operación fue exitosa.
+ */
+async function clearAllSessions(password = "") {
+  if (onlineMode) {
+    const passToUse = password || verifiedPassword;
+    const response = await fetch('api/sessions?id=all', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': passToUse
+      }
+    });
+
+    if (response.status === 401) {
+      throw new Error("Clave incorrecta. Permiso de borrado denegado.");
+    }
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || "Error al vaciar la base de datos.");
+    }
+    return true;
+  } else {
+    // Modo offline
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    return true;
   }
 }
 
