@@ -133,7 +133,7 @@ async function loadAdminDashboard() {
   });
 
   // Dividir por estados
-  const pending = filtered.filter(s => s.status === "Sin Respuesta" || s.status === "Respuestas Completadas" || s.status === "Pendiente");
+  const pending = filtered.filter(s => s.status === "Nuevo Registro" || s.status === "Enviado" || s.status === "Resuelto" || s.status === "Sin Respuesta" || s.status === "Respuestas Completadas" || s.status === "Pendiente");
   const completed = filtered.filter(s => s.status === "Finalizado" || s.status === "Con Respuesta" || s.status === "Completado" || !s.status);
 
   // Renderizar Fichas Pendientes
@@ -151,29 +151,60 @@ async function loadAdminDashboard() {
       `;
     } else {
       pendingTbody.innerHTML = pending.map(s => {
-        const isCompletedByCouple = s.status === "Respuestas Completadas";
-        const statusChip = isCompletedByCouple
-          ? `<span class="chip chip-green"><i class="ti ti-circle-check"></i> Respuestas Completadas</span>`
-          : `<span class="chip chip-amber"><i class="ti ti-loader"></i> Sin Respuesta</span>`;
+        let statusChip = "";
+        if (s.status === "Nuevo Registro") {
+          statusChip = `<span class="chip chip-blue" style="background-color: #e2f1ff; color: #1e74cd; border: 1px solid rgba(30,116,205,0.2);"><i class="ti ti-user-plus"></i> Nuevo Registro</span>`;
+        } else if (s.status === "Resuelto" || s.status === "Respuestas Completadas") {
+          statusChip = `<span class="chip chip-green"><i class="ti ti-circle-check"></i> Resuelto</span>`;
+        } else {
+          // "Enviado", "Sin Respuesta", "Pendiente"
+          statusChip = `<span class="chip chip-amber"><i class="ti ti-mail-forward"></i> Enviado</span>`;
+        }
+
+        // Acciones
+        let actionsHtml = "";
+        if (s.status === "Nuevo Registro") {
+          actionsHtml = `
+            <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; background-color: var(--teal-main); border-color: var(--teal-main);" onclick="loadSessionEditor('${s.id}')">
+              <i class="ti ti-pencil-edit"></i> Revisar y Asignar
+            </button>
+          `;
+        } else if (s.status === "Resuelto" || s.status === "Respuestas Completadas") {
+          // Quitar compartir por WhatsApp/Correo
+          actionsHtml = `
+            <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="loadSessionEditor('${s.id}')">
+              <i class="ti ti-pencil-edit"></i> Completar Sesión
+            </button>
+          `;
+        } else {
+          // "Enviado". Mostrar compartir y completar
+          actionsHtml = `
+            <button class="action-btn" title="Compartir enlace de preguntas" onclick="openShareModal('${s.id}')" style="background-color: var(--teal-light); color: var(--teal-dark);">
+              <i class="ti ti-share"></i>
+            </button>
+            <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="loadSessionEditor('${s.id}')">
+              <i class="ti ti-pencil-edit"></i> Completar Sesión
+            </button>
+          `;
+        }
+
+        // Agregar botón borrar
+        actionsHtml += `
+          <button class="action-btn del" title="Eliminar" onclick="confirmDelete('${s.id}', '${s.n1}', '${s.n2}')">
+            <i class="ti ti-trash"></i>
+          </button>
+        `;
 
         return `
           <tr>
             <td style="font-weight: 600; color: var(--sage-dark);">
               ${s.n1 || '—'} <span style="font-weight: normal; color: var(--text-light);">y</span> ${s.n2 || '—'}
             </td>
-            <td>${s.fec || '—'}</td>
+            <td>${s.fec_envio || s.fec || '—'}</td>
             <td style="text-align: center;">${statusChip}</td>
             <td>
               <div class="actions">
-                <button class="action-btn" title="Compartir enlace de preguntas" onclick="openShareModal('${s.id}')" style="background-color: var(--teal-light); color: var(--teal-dark);">
-                  <i class="ti ti-share"></i>
-                </button>
-                <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="loadSessionEditor('${s.id}')">
-                  <i class="ti ti-pencil-edit"></i> Completar Sesión
-                </button>
-                <button class="action-btn del" title="Eliminar" onclick="confirmDelete('${s.id}', '${s.n1}', '${s.n2}')">
-                  <i class="ti ti-trash"></i>
-                </button>
+                ${actionsHtml}
               </div>
             </td>
           </tr>
@@ -277,8 +308,21 @@ async function confirmDelete(id, n1, n2) {
  * Bloquea o desbloquea los campos demográficos y número de sesión para edición
  */
 function setDemographicsEditable(editable) {
-  const fields = ['n1', 'n2', 'a1', 'a2', 'rel', 'est', 'hij', 'ns'];
-  fields.forEach(f => {
+  // Datos fijos llenados por la pareja: siempre bloqueados
+  const fixedFields = ['n1', 'n2', 'a1', 'a2', 'rel', 'est', 'hij'];
+  fixedFields.forEach(f => {
+    const el = document.getElementById(f);
+    if (el) {
+      el.setAttribute("readonly", "true");
+      if (el.tagName === "SELECT") {
+        el.setAttribute("disabled", "true");
+      }
+    }
+  });
+
+  // Campos de asignación de la sesión: editables si la sesión no está finalizada
+  const assignFields = ['ns', 'ter', 'fec'];
+  assignFields.forEach(f => {
     const el = document.getElementById(f);
     if (el) {
       if (editable) {
@@ -313,9 +357,9 @@ async function loadSessionEditor(id) {
     }
   });
 
-  // Permitir editar datos demográficos solo en la Sesión 1 si no está Finalizada. En la Sesión 2+ siempre se bloquean.
-  const isDemographicsEditable = (parseInt(activeSession.ns) || 1) === 1 && activeSession.status !== "Finalizado";
-  setDemographicsEditable(isDemographicsEditable);
+  // Los campos de asignación (ns, ter, fec) son editables siempre que la sesión no esté finalizada/completada
+  const isSessionEditable = activeSession.status !== "Finalizado" && activeSession.status !== "Completado";
+  setDemographicsEditable(isSessionEditable);
 
   // Cargar y renderizar preguntas dinámicas
   activeSession.questions = getSessionQuestions(activeSession);
@@ -374,13 +418,37 @@ function cancelForm() {
 }
 
 /**
- * Guarda los datos del editor en la base de datos (con estado "Completado")
+ * Valida si la pareja ya tiene una sesión registrada con el mismo número (ns)
+ */
+function checkDuplicateSession(sessionObj) {
+  const n1 = (sessionObj.n1 || '').toLowerCase().trim();
+  const n2 = (sessionObj.n2 || '').toLowerCase().trim();
+  const ns = parseInt(sessionObj.ns) || 0;
+
+  if (!n1 || !n2 || ns <= 0) return false;
+
+  return sessions.some(s => {
+    if (s.id === sessionObj.id) return false; // Ignorar el mismo registro
+    const s1 = (s.n1 || '').toLowerCase().trim();
+    const s2 = (s.n2 || '').toLowerCase().trim();
+    const sameCouple = (s1 === n1 && s2 === n2) || (s1 === n2 && s2 === n1);
+    return sameCouple && parseInt(s.ns) === ns;
+  });
+}
+
+/**
+ * Guarda los datos del editor en la base de datos (con estado "Finalizado")
  */
 async function saveActiveSession() {
   syncFormToActiveSession();
   
   if (!activeSession.n1 || !activeSession.n2) {
     alert("Faltan completar datos demográficos obligatorios (Nombres).");
+    return;
+  }
+
+  if (checkDuplicateSession(activeSession)) {
+    alert(`⚠️ La pareja ya tiene registrada una Sesión N° ${activeSession.ns}. Por favor, asigne otro número de sesión para evitar errores.`);
     return;
   }
 
@@ -738,7 +806,7 @@ async function createNewSessionFromExisting(id) {
     dtot: 60, hi: "09:00", // Tiempos iniciales
     t1: 10, t2: 20, t3: 20, t4: 10,
     prox: "", frec: session.frec || "Semanal",
-    status: "Sin Respuesta"
+    status: "Enviado"
   };
 
   // Llenar inputs de texto
@@ -766,8 +834,8 @@ async function createNewSessionFromExisting(id) {
     s.classList.remove("on");
   });
 
-  // Bloquear edición de datos demográficos y número de sesión
-  setDemographicsEditable(false);
+  // Hacer editables los campos de asignación (ns, ter, fec) para la nueva sesión
+  setDemographicsEditable(true);
 
   // Cargar y renderizar preguntas dinámicas vacías
   renderQuestions();
@@ -843,6 +911,9 @@ function openShareModal(id = null) {
   
   const coupleInput = document.getElementById("share-couple-name");
   const therapistInput = document.getElementById("share-therapist-name");
+  const emailInput = document.getElementById("share-email");
+  
+  if (emailInput) emailInput.value = ""; // Limpiar por defecto
   
   if (id) {
     // Buscar la sesión
@@ -913,19 +984,20 @@ function shareViaWhatsApp() {
 }
 
 /**
- * Abre el gestor de correo predeterminado (mailto)
+ * Abre el gestor de correo predeterminado (mailto) con destinatario
  */
 function shareViaEmail() {
-  const couple = document.getElementById("share-couple-name").value.trim() || "Pareja";
-  const subject = encodeURIComponent("Formulario de Ingreso de Terapia de Pareja");
+  const emailInput = document.getElementById("share-email");
+  const email = emailInput ? emailInput.value.trim() : "";
+  const subject = encodeURIComponent("Cuestionario de Terapia de Pareja");
   const body = encodeURIComponent(document.getElementById("share-message-preview").textContent);
   
-  const mailUrl = `mailto:?subject=${subject}&body=${body}`;
+  const mailUrl = `mailto:${email}?subject=${subject}&body=${body}`;
   window.open(mailUrl, '_blank');
 }
 
 /**
- * Guardar sesión como Pendiente y compartir enlace
+ * Guardar sesión como Enviado y compartir enlace
  */
 async function saveAndShareQuestions() {
   syncFormToActiveSession();
@@ -935,20 +1007,25 @@ async function saveAndShareQuestions() {
     return;
   }
 
+  if (checkDuplicateSession(activeSession)) {
+    alert(`⚠️ La pareja ya tiene registrada una Sesión N° ${activeSession.ns}. Por favor, asigne otro número de sesión para evitar errores.`);
+    return;
+  }
+
   try {
     if (!activeSession.id) {
       activeSession.id = "session_" + Date.now();
     }
     
-    // Forzar estado como Sin Respuesta
-    activeSession.status = "Sin Respuesta";
+    // Forzar estado como Enviado
+    activeSession.status = "Enviado";
     
     await saveSession(activeSession, verifiedPassword);
     
     // Recargar localmente
     sessions = await fetchAllSessions(verifiedPassword);
     
-    showToast("Sesión guardada en estado Sin Respuesta.");
+    showToast("Sesión guardada en estado Enviado.");
     
     // Cerrar editor y volver al dashboard
     document.getElementById("wizard-section").style.display = "none";

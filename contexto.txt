@@ -23,69 +23,64 @@ La persistencia de datos funciona en dos modalidades automáticas:
 ------------------------------------------------------------------------
 2. FLUJO DE TRABAJO Y CICLO DE VIDA DE UNA SESIÓN
 ------------------------------------------------------------------------
-El sistema organiza el estado clínico de las parejas a través de tres estados:
+El sistema organiza el estado clínico de las parejas a través de cuatro estados:
 
-A. Registro Inicial (Sesión 1):
+A. Registro Inicial ("Nuevo Registro"):
    - La pareja ingresa a 'index.html' (sin parámetro ID en la URL).
    - Completa el Paso 0 (Datos Generales), Paso 1 (Motivos e inquietudes) y
      Paso 2 (Respuestas a las 5 preguntas iniciales de reflexión).
    - Al hacer clic en "Enviar", la sesión se guarda en la base de datos con el
-     estado "Respuestas Completadas" (indicando al terapeuta que la ficha inicial
-     está lista para revisión).
+     estado "Nuevo Registro", capturando la fecha/hora exacta en GMT-5.
+   - En el dashboard del administrador, aparece con etiqueta azul como "Nuevo Registro"
+     y el botón "Revisar y Asignar Primera Sesión".
 
-B. Generación de Nuevas Sesiones (Sesión 2 en adelante):
-   - El terapeuta, en 'admin.html', hace clic en el botón "+" ("Nueva Sesión")
-     dentro del Historial Clínico para la pareja seleccionada.
-   - El sistema crea la nueva sesión (incrementando automáticamente el número
-     a 2, 3, etc.), copia los datos demográficos históricos, mantiene las preguntas
-     anteriores (pero vacía las respuestas) y asigna inicialmente el estado "Sin Respuesta".
-   - Los datos demográficos generales e históricos quedan bloqueados (no editables)
-     para evitar alteraciones accidentales del historial.
-   - El terapeuta puede añadir o modificar preguntas personalizadas para esta sesión.
+B. Asignación y Bloqueo de Datos Demográficos:
+   - El terapeuta revisa el "Nuevo Registro" y asume el control.
+   - Los datos demográficos generales llenados por la pareja quedan permanentemente bloqueados
+     como de solo lectura. Solo son editables los campos de asignación (Número de Sesión, Terapeuta, Fecha).
+   - El terapeuta completa el expediente y lo guarda como "Finalizado".
 
-C. Compartir Cuestionario:
-   - El terapeuta hace clic en "Compartir Cuestionario por WhatsApp" o "Enviar Preguntas".
-   - La sesión se guarda en estado "Sin Respuesta" y se abre un modal con un
-     mensaje pre-redactado y un enlace dinámico robusto (ej: 'index.html?id=session_XXXX').
-   - El enlace deriva directamente a las preguntas de reflexión de la pareja,
-     ocultando las notas privadas, los tiempos y las páginas demográficas.
+C. Generación de Nuevas Sesiones ("Enviado"):
+   - Para las siguientes sesiones (Sesión 2 en adelante), el terapeuta hace clic en "+"
+     en la grilla de historial de esa pareja.
+   - El sistema crea la nueva sesión (ej. ns=2), limpia las respuestas anteriores y
+     asigna por defecto el estado "Enviado".
+   - El terapeuta añade preguntas personalizadas y abre el modal de compartir. En el modal,
+     se puede escribir el correo electrónico de la pareja para enviar una invitación mailto,
+     además de las opciones habituales de WhatsApp.
 
-D. Respuesta de la Pareja y Auto-rellenado:
-   - La pareja abre el enlace en su móvil, responde a las preguntas personalizadas
-     y las envía.
-   - En la nube, se realiza un merge (mezclado) que añade las respuestas al objeto
-     clínico y cambia automáticamente su estado a "Respuestas Completadas".
-   - El dashboard del terapeuta actualiza el indicador visual de la sesión a verde
-     ("Respuestas Completadas").
-   - Al hacer clic en "Completar Sesión", las respuestas contestadas por la pareja
-     se auto-rellenan de forma instantánea en los campos del editor clínico.
+D. Respuesta al Enlace y Auto-rellenado ("Resuelto"):
+   - La pareja abre el enlace dinámico y ve una cabecera premium estilizada ("Cuestionario de Reflexión")
+     con los nombres de la pareja, número de sesión, terapeuta y fecha.
+   - Al contestar y hacer clic en "Enviar", el estado de la sesión cambia automáticamente a "Resuelto"
+     y registra la marca de tiempo (GMT-5).
+   - En el panel del administrador, la fila se actualiza a "Resuelto" (etiqueta verde), se ocultan los
+     botones de compartir (para evitar envíos redundantes) y queda disponible "Completar Sesión".
 
-E. Finalización:
-   - El terapeuta rellena las observaciones de conducta no verbal, define la tarea,
-     distribuye los tiempos de la sesión y hace clic en "Finalizar y Guardar Sesión".
-   - El estado cambia a "Finalizado", y la sesión pasa a almacenarse en el
-     Historial Clínico de Completados.
+E. Finalización ("Finalizado"):
+   - El terapeuta completa observaciones clínicas, tarea asignada, gestiona tiempos y guarda.
+   - El estado cambia a "Finalizado" y la sesión se archiva en la grilla inferior del historial clínico.
 
 ------------------------------------------------------------------------
 3. CAMBIOS TÉCNICOS Y RESOLUCIÓN DE BUGS (ÚLTIMA ITERACIÓN)
 ------------------------------------------------------------------------
 Durante el desarrollo se identificaron y resolvieron los siguientes problemas críticos:
 
-- BUG de Redirección (Login): Cuando el administrador accedía por la ruta limpia
-  '/admin' (sin '.html'), la función de enlace público generaba una URL errónea
-  que forzaba al paciente a autenticarse. Se corrigió 'updateShareLinks()' con un
-  parche de rutas robusto que identifica '/admin.html', '/admin' y 'file://'.
-- BUG de Caché de Navegador: Cloudflare o el navegador almacenaban en caché el GET
-  de la lista de sesiones, por lo que las respuestas de la pareja no se veían
-  inmediatamente al reabrir la sesión. Se solucionó implementando Cache-Busting
-  mediante el parámetro dinámico '_=${Date.now()}' en todos los GET.
-- BUG de Bloqueo de Edición: Los datos demográficos se volvían editables en
-  sesiones superiores si estas regresaban al estado "Sin Respuesta". Se corrigió
-  restringiendo la edición demográfica únicamente a la Sesión 1 y siempre que
-  esta no esté finalizada.
-- BUG de Renderizado de "undefined": Si una pregunta no tenía respuesta aún, el
-  textarea se rellenaba con la cadena literal "undefined". Se corrigió usando la
-  evaluación de cortocircuito '${item.a || ""}'.
+- VALIDACIÓN DE DUPLICIDAD: Se implementó un control en el frontend (js/app_admin.js) y backend
+  (functions/api/sessions.js) que impide registrar o compartir una sesión si esa pareja (nombres
+  cruzados case-insensitive) ya tiene una sesión guardada con el mismo número (ns). Retorna 400.
+- ENTRADA DE CORREO EN COMPARTIR: Se agregó un campo `#share-email` en el modal de compartir de admin.html
+  y se integró en js/app_admin.js para componer enlaces mailto dinámicos con el correo del destinatario.
+- REGISTRO DE TIEMPO (GMT-5): Se capturan y guardan las marcas de tiempo de envío y recepción exactas
+  formateadas como "DD/MM/YYYY HH:MM hs" usando el desfase de zona horaria de Perú/Colombia/México.
+- REGLAS DE BLOQUEO: Se redefinieron los campos demográficos como permanentemente de solo lectura (readonly)
+  para el terapeuta una vez completados por la pareja, manteniendo editables las variables de asignación
+  (ns, ter, fec) y los motivos de consulta.
+- BUG de Redirección (Login): Corregido 'updateShareLinks()' con un parche de rutas robusto que identifica
+  correctamente '/admin.html', '/admin' y 'file://'.
+- BUG de Caché de Navegador: Cache-Busting dinámico (`_=${Date.now()}`) para evitar que se carguen
+  versiones desactualizadas de las sesiones al refrescar el portal.
+- BUG de Renderizado de "undefined": Corregido usando `${item.a || ""}` en las plantillas de textareas.
 
 ------------------------------------------------------------------------
 4. INVENTARIO DE ARCHIVOS MODIFICADOS Y SU ROL

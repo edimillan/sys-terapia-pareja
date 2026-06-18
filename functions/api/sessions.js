@@ -132,9 +132,13 @@ export async function onRequest(context) {
       if (!body.id) {
         // Generar un ID único para la nueva ficha clínica
         body.id = "session_" + Date.now();
-        // Si no es el administrador (es un paciente), forzar el estado en "Respuestas Completadas"
+        // Si no es el administrador (es un paciente), forzar el estado en "Nuevo Registro" y guardar fecha
         if (!isAdmin) {
-          body.status = "Respuestas Completadas";
+          body.status = "Nuevo Registro";
+          const date = new Date();
+          const offsetDate = new Date(date.getTime() - (5 * 60 * 60 * 1000)); // GMT-5
+          const pad = (n) => n.toString().padStart(2, '0');
+          body.fec_envio = `${pad(offsetDate.getUTCDate())}/${pad(offsetDate.getUTCMonth()+1)}/${offsetDate.getUTCFullYear()} ${pad(offsetDate.getUTCHours())}:${pad(offsetDate.getUTCMinutes())} hs`;
         }
       } else {
         // Si se está editando una sesión existente (tiene ID)
@@ -152,8 +156,14 @@ export async function onRequest(context) {
 
           // Mezclar: Mantener lo que el terapeuta ya rellenó, pero actualizar las respuestas
           existing.questions = body.questions;
-          // Actualizar estado a "Respuestas Completadas" al ser enviado por el paciente
-          existing.status = "Respuestas Completadas";
+          // Actualizar estado a "Resuelto" al ser enviado por el paciente
+          existing.status = "Resuelto";
+          
+          // Registrar fecha y hora de recepción
+          const date = new Date();
+          const offsetDate = new Date(date.getTime() - (5 * 60 * 60 * 1000)); // GMT-5
+          const pad = (n) => n.toString().padStart(2, '0');
+          existing.fec_envio = `${pad(offsetDate.getUTCDate())}/${pad(offsetDate.getUTCMonth()+1)}/${offsetDate.getUTCFullYear()} ${pad(offsetDate.getUTCHours())}:${pad(offsetDate.getUTCMinutes())} hs`;
 
           // Usar el registro mezclado para guardar
           await KV.put(`session_${existing.id}`, JSON.stringify(existing));
@@ -162,6 +172,35 @@ export async function onRequest(context) {
             JSON.stringify({ success: true, session: existing }),
             { status: 200, headers: corsHeaders }
           );
+        }
+      }
+
+      // Validar duplicidad de ns (número de sesión) para la misma pareja
+      const n1 = (body.n1 || '').toLowerCase().trim();
+      const n2 = (body.n2 || '').toLowerCase().trim();
+      const ns = parseInt(body.ns) || 0;
+
+      if (n1 && n2 && ns > 0) {
+        const list = await KV.list({ prefix: "session_" });
+        for (const key of list.keys) {
+          if (key.name === `session_${body.id}`) continue;
+          const val = await KV.get(key.name);
+          if (val) {
+            try {
+              const s = JSON.parse(val);
+              if (s.id !== body.id) {
+                const s1 = (s.n1 || '').toLowerCase().trim();
+                const s2 = (s.n2 || '').toLowerCase().trim();
+                const sameCouple = (s1 === n1 && s2 === n2) || (s1 === n2 && s2 === n1);
+                if (sameCouple && parseInt(s.ns) === ns) {
+                  return new Response(
+                    JSON.stringify({ error: `La pareja ya tiene registrada una Sesión N° ${ns}. Por favor, asigne otro número de sesión para evitar errores.` }),
+                    { status: 400, headers: corsHeaders }
+                  );
+                }
+              }
+            } catch (e) {}
+          }
         }
       }
 

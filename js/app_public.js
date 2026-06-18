@@ -57,8 +57,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (addQuestionContainer) addQuestionContainer.style.display = "none";
 
     // Cambiar texto de cabecera si es posible
+    const headerH1 = document.querySelector(".header-text h1");
+    if (headerH1) headerH1.textContent = "Cuestionario de Reflexión";
+
     const headerP = document.querySelector(".header-text p");
-    if (headerP) headerP.textContent = "Por favor completen sus respuestas para la sesión clínica";
+    if (headerP) headerP.textContent = "Por favor respondan a las preguntas preparadas para su sesión clínica";
 
     // 2. Cargar datos de la sesión (Online / Offline Fallback)
     let sessionData = null;
@@ -94,8 +97,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       const welcomeBanner = document.getElementById("welcome-partner-banner");
       const welcomeText = document.getElementById("welcome-partner-text");
       if (welcomeBanner && welcomeText) {
-        welcomeText.innerHTML = `Hola <strong>${sessionData.n1 || ''}</strong> y <strong>${sessionData.n2 || ''}</strong>, por favor respondan a las siguientes preguntas para su Sesión N° <strong>${sessionData.ns || 1}</strong> con <strong>${sessionData.ter || 'su terapeuta'}</strong>:`;
+        welcomeText.innerHTML = `
+          <div style="font-family: var(--font-display); color: var(--sage-dark); font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;">
+            <i class="ti ti-heart-handshake"></i> Cuestionario de Reflexión — Sesión N° ${sessionData.ns || 1}
+          </div>
+          <div style="color: var(--text-main); font-size: 0.95rem; line-height: 1.5; margin-bottom: 0.5rem;">
+            Pareja: <strong>${sessionData.n1 || ''}</strong> y <strong>${sessionData.n2 || ''}</strong>
+          </div>
+          <div style="color: var(--text-muted); font-size: 0.85rem;">
+            Terapeuta: <strong>${sessionData.ter || 'su terapeuta'}</strong> · Fecha de sesión: <strong>${sessionData.fec || '—'}</strong>
+          </div>
+        `;
         welcomeBanner.style.display = "block";
+        welcomeBanner.style.borderLeft = "4px solid var(--sage-main)";
+        welcomeBanner.style.backgroundColor = "var(--sage-light)";
+        welcomeBanner.style.padding = "1.5rem";
       }
     } else {
       alert("Error: No se pudo encontrar la sesión con el enlace provisto.");
@@ -322,14 +338,22 @@ async function submitPatientForm() {
           const idx = list.findIndex(s => s.id === sessionId);
           if (idx !== -1) {
             list[idx].questions = activeSession.questions;
-            list[idx].status = "Respuestas Completadas";
+            list[idx].status = "Resuelto";
+            const date = new Date();
+            const offsetDate = new Date(date.getTime() - (5 * 60 * 60 * 1000)); // GMT-5
+            const pad = (n) => n.toString().padStart(2, '0');
+            list[idx].fec_envio = `${pad(offsetDate.getUTCDate())}/${pad(offsetDate.getUTCMonth()+1)}/${offsetDate.getUTCFullYear()} ${pad(offsetDate.getUTCHours())}:${pad(offsetDate.getUTCMinutes())} hs`;
             localStorage.setItem('TEACOMPANO_SESSIONS', JSON.stringify(list));
           }
         }
       }
     } else {
       // Al registrarse por primera vez, el paciente ya responde las preguntas iniciales
-      activeSession.status = "Respuestas Completadas";
+      activeSession.status = "Nuevo Registro";
+      const date = new Date();
+      const offsetDate = new Date(date.getTime() - (5 * 60 * 60 * 1000)); // GMT-5
+      const pad = (n) => n.toString().padStart(2, '0');
+      activeSession.fec_envio = `${pad(offsetDate.getUTCDate())}/${pad(offsetDate.getUTCMonth()+1)}/${offsetDate.getUTCFullYear()} ${pad(offsetDate.getUTCHours())}:${pad(offsetDate.getUTCMinutes())} hs`;
       await saveSession(activeSession);
     }
     
