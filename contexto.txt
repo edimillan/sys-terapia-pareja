@@ -76,6 +76,7 @@ Durante el desarrollo se identificaron y resolvieron los siguientes problemas cr
 - REGLAS DE BLOQUEO: Se redefinieron los campos demográficos como permanentemente de solo lectura (readonly)
   para el terapeuta una vez completados por la pareja, manteniendo editables las variables de asignación
   (ns, ter, fec) y los motivos de consulta.
+- PREGUNTAS PÚBLICAS DE SOLO LECTURA: Para evitar que los pacientes alteren las preguntas clínicas preestablecidas por el terapeuta, se eliminó la posibilidad de editar el título de las preguntas o eliminarlas (se retiró el input de texto del título de pregunta, el botón de eliminar papelera, y el botón "Agregar Pregunta Libre" en index.html). Ahora los pacientes solo visualizan las preguntas fijas como texto y responden en sus textareas correspondientes.
 - BOTÓN DE LIMPIEZA DE BD: Se añadió el botón "Limpiar BD" en el panel de control (admin.html), el cual permite borrar todos los registros mediante fetch en modo online (DELETE api/sessions?id=all) o vaciando localStorage en modo offline. Cuenta con doble confirmación de seguridad.
 - BUG de Redirección (Login): Corregido 'updateShareLinks()' con un parche de rutas robusto que identifica
   correctamente '/admin.html', '/admin' y 'file://'.
