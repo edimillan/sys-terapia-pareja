@@ -76,6 +76,7 @@ Durante el desarrollo se identificaron y resolvieron los siguientes problemas cr
 - REGLAS DE BLOQUEO: Se redefinieron los campos demográficos como permanentemente de solo lectura (readonly)
   para el terapeuta una vez completados por la pareja, manteniendo editables las variables de asignación
   (ns, ter, fec) y los motivos de consulta.
+- BOTÓN DE LIMPIEZA DE BD: Se añadió el botón "Limpiar BD" en el panel de control (admin.html), el cual permite borrar todos los registros mediante fetch en modo online (DELETE api/sessions?id=all) o vaciando localStorage en modo offline. Cuenta con doble confirmación de seguridad.
 - BUG de Redirección (Login): Corregido 'updateShareLinks()' con un parche de rutas robusto que identifica
   correctamente '/admin.html', '/admin' y 'file://'.
 - BUG de Caché de Navegador: Cache-Busting dinámico (`_=${Date.now()}`) para evitar que se carguen
