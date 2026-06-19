@@ -165,14 +165,14 @@ async function loadAdminDashboard() {
         let actionsHtml = "";
         if (s.status === "Nuevo Registro") {
           actionsHtml = `
-            <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; background-color: var(--teal-main); border-color: var(--teal-main);" onclick="loadSessionEditor('${s.id}')">
+            <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; background-color: var(--teal-main); border-color: var(--teal-main);" onclick="loadSessionReview('${s.id}')">
               <i class="ti ti-pencil-edit"></i> Revisar y Asignar
             </button>
           `;
         } else if (s.status === "Resuelto" || s.status === "Respuestas Completadas") {
           // Quitar compartir por WhatsApp/Correo
           actionsHtml = `
-            <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="loadSessionEditor('${s.id}')">
+            <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="loadSessionReview('${s.id}')">
               <i class="ti ti-pencil-edit"></i> Completar Sesión
             </button>
           `;
@@ -182,7 +182,7 @@ async function loadAdminDashboard() {
             <button class="action-btn" title="Compartir enlace de preguntas" onclick="openShareModal('${s.id}')" style="background-color: var(--teal-light); color: var(--teal-dark);">
               <i class="ti ti-share"></i>
             </button>
-            <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="loadSessionEditor('${s.id}')">
+            <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="loadSessionReview('${s.id}')">
               <i class="ti ti-pencil-edit"></i> Completar Sesión
             </button>
           `;
@@ -336,6 +336,210 @@ function setDemographicsEditable(editable) {
       }
     }
   });
+}
+
+async function loadSessionReview(id) {
+  const allSess = await fetchAllSessions(verifiedPassword);
+  const session = allSess.find(s => s.id === id);
+  if (!session) return;
+
+  activeSession = { ...session };
+
+  // 1. Datos Demográficos (Solo Lectura)
+  const demoEl = document.getElementById("rev-info-demographics");
+  if (demoEl) {
+    demoEl.innerHTML = `
+      <div><strong>Integrante 1:</strong> ${activeSession.n1 || '—'}</div>
+      <div><strong>Edad Integrante 1:</strong> ${activeSession.a1 || '—'} años</div>
+      <div><strong>Integrante 2:</strong> ${activeSession.n2 || '—'}</div>
+      <div><strong>Edad Integrante 2:</strong> ${activeSession.a2 || '—'} años</div>
+      <div><strong>Tiempo de relación:</strong> ${activeSession.rel || '—'}</div>
+      <div><strong>Estado civil:</strong> ${activeSession.est || '—'}</div>
+      <div><strong>¿Tienen hijos?:</strong> ${activeSession.hij || '—'}</div>
+      <div><strong>Fecha de Envío:</strong> ${activeSession.fec_envio || '—'}</div>
+    `;
+  }
+
+  // 2. Motivos de Consulta y Conflicto (Llenar Inputs Editables)
+  const m1Input = document.getElementById("rev-m1");
+  const m2Input = document.getElementById("rev-m2");
+  if (m1Input) m1Input.value = activeSession.m1 || "";
+  if (m2Input) m2Input.value = activeSession.m2 || "";
+
+  // Áreas de conflicto (Activar las seleccionadas)
+  document.querySelectorAll("#rev-areas .tag").forEach(t => {
+    const text = t.textContent.trim();
+    if (activeSession.areas && activeSession.areas.includes(text)) {
+      t.classList.add("on");
+    } else {
+      t.classList.remove("on");
+    }
+  });
+
+  const durSelect = document.getElementById("rev-dur");
+  const prevSelect = document.getElementById("rev-prev");
+  if (durSelect) durSelect.value = activeSession.dur || "";
+  if (prevSelect) prevSelect.value = activeSession.prev || "";
+
+  // Escala de compromiso
+  document.querySelectorAll("#rev-sc1 .snum").forEach(s => {
+    const val = parseInt(s.textContent.trim());
+    if (activeSession.sc1 === val) {
+      s.classList.add("on");
+    } else {
+      s.classList.remove("on");
+    }
+  });
+
+  // 3. Respuestas al Cuestionario (Solo Lectura)
+  const questEl = document.getElementById("rev-info-questions");
+  if (questEl) {
+    questEl.innerHTML = "";
+    const questionsList = activeSession.questions && activeSession.questions.length > 0 ? activeSession.questions : [
+      { q: "¿Qué esperan lograr activamente al asistir a esta terapia?", a: activeSession.q1 || "" },
+      { q: "¿Cuándo fue el último periodo en el que se sintieron felices en pareja?", a: activeSession.q2 || "" },
+      { q: "¿Cómo suelen reaccionar y manejar los desacuerdos o discusiones?", a: activeSession.q3 || "" },
+      { q: "¿Qué sienten que la otra persona no logra entender o valorar de ustedes?", a: activeSession.q4 || "" },
+      { q: "¿Qué aspectos positivos los mantiene unidos y valoran hoy de su relación?", a: activeSession.q5 || "" }
+    ];
+    questionsList.forEach((q, idx) => {
+      const qBox = document.createElement("div");
+      qBox.style.borderBottom = "1px solid var(--border-light)";
+      qBox.style.paddingBottom = "0.75rem";
+      qBox.innerHTML = `
+        <div style="font-weight: 600; color: var(--sage-dark); margin-bottom: 4px;">${idx + 1}. ${q.q}</div>
+        <p style="white-space: pre-wrap; font-style: italic; color: var(--text-muted); margin: 0; padding-left: 0.5rem; border-left: 2px solid var(--sage-light);">${q.a || '—'}</p>
+      `;
+      questEl.appendChild(qBox);
+    });
+  }
+
+  // 4. Llenar Asignación y Notas (Editables)
+  const nsInput = document.getElementById("rev-ns");
+  if (nsInput) {
+    nsInput.value = activeSession.ns || 1;
+  }
+  
+  const fecInput = document.getElementById("rev-fec");
+  if (fecInput) {
+    fecInput.value = activeSession.fec || new Date().toISOString().split('T')[0];
+  }
+
+  const terInput = document.getElementById("rev-ter");
+  if (terInput) {
+    if (activeSession.ter) {
+      terInput.value = activeSession.ter;
+    } else {
+      const completedOnes = allSess.filter(s => s.ter);
+      terInput.value = completedOnes.length > 0 ? completedOnes[0].ter : "";
+    }
+  }
+
+  const obsInput = document.getElementById("rev-obs");
+  const tarInput = document.getElementById("rev-tar");
+  if (obsInput) obsInput.value = activeSession.obs || "";
+  if (tarInput) tarInput.value = activeSession.tar || "";
+
+  // Tiempos
+  const dtotInput = document.getElementById("rev-dtot");
+  const hiInput = document.getElementById("rev-hi");
+  if (dtotInput) dtotInput.value = activeSession.dtot || 60;
+  if (hiInput) hiInput.value = activeSession.hi || "09:00";
+
+  const t1Input = document.getElementById("rev-t1");
+  const t2Input = document.getElementById("rev-t2");
+  const t3Input = document.getElementById("rev-t3");
+  const t4Input = document.getElementById("rev-t4");
+  if (t1Input) t1Input.value = activeSession.t1 !== undefined ? activeSession.t1 : 10;
+  if (t2Input) t2Input.value = activeSession.t2 !== undefined ? activeSession.t2 : 20;
+  if (t3Input) t3Input.value = activeSession.t3 !== undefined ? activeSession.t3 : 20;
+  if (t4Input) t4Input.value = activeSession.t4 !== undefined ? activeSession.t4 : 10;
+
+  // Cabeceras según estado
+  const titleEl = document.getElementById("review-title");
+  const subtitleEl = document.getElementById("review-subtitle");
+  if (titleEl) {
+    titleEl.textContent = activeSession.status === "Nuevo Registro" ? "Revisar y Asignar Primera Sesión" : "Completar Sesión de Pareja";
+  }
+  if (subtitleEl) {
+    subtitleEl.textContent = activeSession.status === "Nuevo Registro" ? "Ficha de ingreso inicial enviada por la pareja" : `Respuestas recibidas para la Sesión N° ${activeSession.ns || 1}`;
+  }
+
+  document.getElementById("dashboard-section").style.display = "none";
+  document.getElementById("review-section").style.display = "block";
+  showToast("Abriendo vista de detalle de respuestas...");
+}
+
+function closeReviewSection() {
+  document.getElementById("review-section").style.display = "none";
+  document.getElementById("dashboard-section").style.display = "block";
+  loadAdminDashboard();
+}
+
+async function saveReviewSection() {
+  // Sincronizar motivos editados
+  const m1Input = document.getElementById("rev-m1");
+  const m2Input = document.getElementById("rev-m2");
+  if (m1Input) activeSession.m1 = m1Input.value;
+  if (m2Input) activeSession.m2 = m2Input.value;
+
+  activeSession.areas = [...document.querySelectorAll("#rev-areas .tag.on")].map(t => t.textContent.trim());
+
+  const durSelect = document.getElementById("rev-dur");
+  const prevSelect = document.getElementById("rev-prev");
+  if (durSelect) activeSession.dur = durSelect.value;
+  if (prevSelect) activeSession.prev = prevSelect.value;
+
+  const selSnum = document.querySelector("#rev-sc1 .snum.on");
+  activeSession.sc1 = selSnum ? parseInt(selSnum.textContent.trim()) : "";
+
+  // Sincronizar asignación y notas
+  const nsInput = document.getElementById("rev-ns");
+  const fecInput = document.getElementById("rev-fec");
+  const terInput = document.getElementById("rev-ter");
+  const obsInput = document.getElementById("rev-obs");
+  const tarInput = document.getElementById("rev-tar");
+
+  if (nsInput) activeSession.ns = parseInt(nsInput.value) || 1;
+  if (fecInput) activeSession.fec = fecInput.value;
+  if (terInput) activeSession.ter = terInput.value.trim();
+  if (obsInput) activeSession.obs = obsInput.value;
+  if (tarInput) activeSession.tar = tarInput.value;
+
+  // Tiempos
+  const dtotInput = document.getElementById("rev-dtot");
+  const hiInput = document.getElementById("rev-hi");
+  const t1Input = document.getElementById("rev-t1");
+  const t2Input = document.getElementById("rev-t2");
+  const t3Input = document.getElementById("rev-t3");
+  const t4Input = document.getElementById("rev-t4");
+
+  if (dtotInput) activeSession.dtot = parseInt(dtotInput.value) || 60;
+  if (hiInput) activeSession.hi = hiInput.value;
+  if (t1Input) activeSession.t1 = parseInt(t1Input.value) || 0;
+  if (t2Input) activeSession.t2 = parseInt(t2Input.value) || 0;
+  if (t3Input) activeSession.t3 = parseInt(t3Input.value) || 0;
+  if (t4Input) activeSession.t4 = parseInt(t4Input.value) || 0;
+
+  if (!activeSession.fec || !activeSession.ter) {
+    alert("Por favor, asigne una fecha y un terapeuta antes de finalizar la sesión.");
+    return;
+  }
+
+  if (checkDuplicateSession(activeSession)) {
+    alert(`⚠️ La pareja ya tiene registrada una Sesión N° ${activeSession.ns}. Por favor, asigne otro número de sesión para evitar errores.`);
+    return;
+  }
+
+  try {
+    activeSession.status = "Finalizado";
+    
+    await saveSession(activeSession, verifiedPassword);
+    showToast("Sesión finalizada e indexada en el historial clínico.");
+    closeReviewSection();
+  } catch (error) {
+    alert("Error al guardar cambios: " + error.message);
+  }
 }
 
 async function loadSessionEditor(id) {

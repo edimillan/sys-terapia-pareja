@@ -82,6 +82,8 @@ Durante el desarrollo se identificaron y resolvieron los siguientes problemas cr
   correctamente '/admin.html', '/admin' y 'file://'.
 - BUG de Caché de Navegador: Cache-Busting dinámico (`_=${Date.now()}`) para evitar que se carguen
   versiones desactualizadas de las sesiones al refrescar el portal.
+- VISTA UNIFICADA DE REVISIÓN (DETALLE PENDIENTE): Se implementó una vista de revisión unificada (`#review-section` en admin.html y `loadSessionReview` en js/app_admin.js) para fichas con estado "Nuevo Registro" o "Resuelto". En ella, el terapeuta puede visualizar todas las respuestas y datos demográficos provistos por la pareja de solo lectura en una única pantalla, manteniendo editables los motivos, la asignación clínica (terapeuta, fecha, ns), observaciones y tiempos para finalizar el registro.
+- CAMBIO DE NOMBRE DE PASO: Se renombró la tercera pestaña del formulario público (index.html) de "Sesión" a "Reflexión" para alinearlo con la terminología clínica del centro.
 - BUG de Renderizado de "undefined": Corregido usando `${item.a || ""}` en las plantillas de textareas.
 
 ------------------------------------------------------------------------
