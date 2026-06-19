@@ -377,15 +377,7 @@ async function loadSessionEditor(id, isReviewOnly = false) {
   activeSession.questions = getSessionQuestions(activeSession);
   renderQuestions();
 
-  // Si no tiene terapeuta asignado aún y no es modo revisión, asignar terapeuta vacío o último
-  const terInput = document.getElementById("ter");
-  if (terInput && !terInput.value && sessions.length > 0 && !reviewMode) {
-    const completedOnes = sessions.filter(s => s.ter);
-    if (completedOnes.length > 0) {
-      terInput.value = completedOnes[0].ter;
-      activeSession.ter = completedOnes[0].ter;
-    }
-  }
+
 
   // Marcar tags de áreas de conflicto
   document.querySelectorAll("#areas .tag").forEach(t => {
@@ -780,17 +772,16 @@ function renderQuestions() {
     const card = document.createElement("div");
     card.className = "q-card";
     card.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 0.5rem;">
-        <input type="text" class="q-input" value="${item.q}" placeholder="Escribe la pregunta..." style="font-weight: 600; width: 100%; border: none; border-bottom: 1px solid var(--border-color); background: transparent; padding: 4px 0; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-body);">
-        <button type="button" class="action-btn del" onclick="deleteQuestion(${idx})" title="Eliminar pregunta" style="background: none; border: none; color: var(--danger); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; padding: 4px;">
-          <i class="ti ti-trash"></i>
-        </button>
+      <div style="margin-bottom: 0.5rem;">
+        <span style="font-weight: 600; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-body); display: block;">${item.q}</span>
+        <input type="hidden" class="q-input" value="${item.q}">
       </div>
       <textarea class="q-textarea" placeholder="Respuesta del paciente/terapeuta..." style="width: 100%; min-height: 80px;">${item.a || ''}</textarea>
     `;
     container.appendChild(card);
   });
 }
+
 
 /**
  * Agrega pregunta en el panel de administración
