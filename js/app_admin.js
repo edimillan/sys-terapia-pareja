@@ -672,6 +672,23 @@ function buildSum() {
     });
   }
 
+  // Configuración condicional según reviewMode
+  const coupleCardTitle = reviewMode ? "👫 Pareja" : "👫 Pareja Atendida";
+  
+  const relationCardHtml = reviewMode ? "" : `
+      <div class="sum-card">
+        <div class="sum-title">📊 Relación y Sesión</div>
+        <div class="sum-val">Relación: ${activeSession.rel || '—'} · Sesión N° ${activeSession.ns || 1} (${activeSession.frec || '—'})</div>
+      </div>
+  `;
+
+  const dateCardTitle = reviewMode ? "📅 Fecha de Envío" : "📅 Fecha y Profesional";
+  const dateCardValue = reviewMode ? 
+    (activeSession.fec_envio || activeSession.fec || '—') : 
+    `${activeSession.fec || '—'} · Terapeuta: ${activeSession.ter || '—'}`;
+
+  const questionsCardTitle = reviewMode ? "❓ Preguntas del Cuestionario" : "❓ Preguntas y Respuestas de la Sesión";
+
   const homeworkCardHtml = reviewMode ? "" : `
       <div class="sum-card" style="grid-column: span 2;">
         <div class="sum-title">📝 Tarea Asignada para la casa</div>
@@ -682,16 +699,13 @@ function buildSum() {
   sumcont.innerHTML = `
     <div class="sum-grid">
       <div class="sum-card">
-        <div class="sum-title">👫 Pareja Atendida</div>
+        <div class="sum-title">${coupleCardTitle}</div>
         <div class="sum-val">${n1} y ${n2}</div>
       </div>
+      ${relationCardHtml}
       <div class="sum-card">
-        <div class="sum-title">📊 Relación y Sesión</div>
-        <div class="sum-val">Relación: ${activeSession.rel || '—'} · Sesión N° ${activeSession.ns || 1} (${activeSession.frec || '—'})</div>
-      </div>
-      <div class="sum-card">
-        <div class="sum-title">📅 Fecha y Profesional</div>
-        <div class="sum-val">${activeSession.fec || '—'} · Terapeuta: ${activeSession.ter || '—'}</div>
+        <div class="sum-title">${dateCardTitle}</div>
+        <div class="sum-val">${dateCardValue}</div>
       </div>
       <div class="sum-card">
         <div class="sum-title">❤️ Compromiso Relacional</div>
@@ -702,7 +716,7 @@ function buildSum() {
         <div class="sum-val">${areasStr}</div>
       </div>
       <div class="sum-card" style="grid-column: span 2;">
-        <div class="sum-title">❓ Preguntas y Respuestas de la Sesión</div>
+        <div class="sum-title">${questionsCardTitle}</div>
         <div class="sum-val" style="display: flex; flex-direction: column; gap: 0.4rem; font-weight: normal; color: var(--text-main);">
           ${qHtml || 'No hay preguntas registradas.'}
         </div>
