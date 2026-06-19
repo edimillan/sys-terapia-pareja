@@ -82,10 +82,10 @@ Durante el desarrollo se identificaron y resolvieron los siguientes problemas cr
   correctamente '/admin.html', '/admin' y 'file://'.
 - BUG de Caché de Navegador: Cache-Busting dinámico (`_=${Date.now()}`) para evitar que se carguen
   versiones desactualizadas de las sesiones al refrescar el portal.
-- ESTADO PROGRAMADO: Se introdujo el estado "Programado" (etiqueta morada en el dashboard) para separar el agendamiento del completado clínico. Permite que una ficha de "Nuevo Registro" sea asignada a un terapeuta/fecha y guardada como "Programada" en la bandeja de entrada de pendientes, lista para ser completada con observaciones durante la sesión real y finalizada después.
-- EXPORTACIÓN PDF EN REVISIÓN: Se añadió el botón "Descargar PDF" en la vista unificada de revisión para posibilitar al psicólogo exportar un informe en PDF con la plantilla oficial directamente desde el detalle de la ficha pendiente.
-- CAMBIO DE NOMBRE DE PASO: Se renombró la tercera pestaña del formulario público (index.html) de "Sesión" a "Reflexión" para alinearlo con la terminología clínica del centro.
-- BUG de Renderizado de "undefined": Corregido usando `${item.a || ""}` en las plantillas de textareas.
+- ESTADO PROGRAMADO: Se introdujo el estado "Programado" (etiqueta morada en el dashboard) para separar el agendamiento del completado clínico. Permite que una ficha de "Nuevo Registro" o "Resuelto" sea asignada a un terapeuta/fecha y guardada como "Programada" en la bandeja de entrada de pendientes, lista para ser completada con observaciones durante la sesión real y finalizada después. El botón de programado ahora se encuentra integrado en el Paso 4 del asistente de 5 pasos.
+- REVERSIÓN A ASISTENTE DE 5 PASOS: Se eliminó la vista compacta en dos columnas (#review-section) para revisar cuestionarios recibidos y se restauró el uso del asistente de 5 pasos (#wizard-section) que mantiene la estética y los componentes interactivos originales (taggers, escalas, etc.) del sistema.
+- CAMBIO DE NOMBRE DE PASO A "REFLEXIÓN": Se renombró la pestaña del paso de "Sesión" a "Reflexión" tanto en el formulario público como en el asistente del administrador, alineándose con la terminología clínica institucional.
+- EXPORTACIÓN PDF: La exportación en PDF de la plantilla oficial se realiza de manera integrada directamente desde el Paso 4 del asistente clínico o desde el listado de historial.
 
 ------------------------------------------------------------------------
 4. INVENTARIO DE ARCHIVOS MODIFICADOS Y SU ROL
