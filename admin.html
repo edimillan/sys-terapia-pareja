@@ -209,13 +209,13 @@
                 <option value="Sí, 3 o más">Sí, 3 o más</option>
               </select>
             </div>
-            <div class="field">
+            <div class="field" id="field-ns">
               <label class="lbl" for="ns"><i class="ti ti-list-numbers"></i> N° de sesión</label>
               <input type="number" id="ns" value="1" min="1">
             </div>
           </div>
           
-          <div class="grid2">
+          <div class="grid2" id="grid-fec-ter">
             <div class="field">
               <label class="lbl" for="fec"><i class="ti ti-calendar"></i> Fecha de sesión</label>
               <input type="date" id="fec">
@@ -226,13 +226,17 @@
             </div>
           </div>
           
-          <div class="btn-row">
-            <button class="btn btn-danger" onclick="cancelForm()">
-              <i class="ti ti-x"></i> Volver al Historial
-            </button>
-            <button class="btn btn-sage" onclick="go(1)">
-              Continuar <i class="ti ti-arrow-right"></i>
-            </button>
+          <div class="btn-row" style="justify-content: space-between;">
+            <div>
+              <button class="btn btn-danger" onclick="cancelForm()">
+                <i class="ti ti-home"></i> Volver al Menú
+              </button>
+            </div>
+            <div>
+              <button class="btn btn-sage" onclick="go(1)">
+                Continuar <i class="ti ti-arrow-right"></i>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -318,9 +322,16 @@
             </div>
           </div>
           
-          <div class="btn-row">
-            <button class="btn" onclick="go(0)"><i class="ti ti-arrow-left"></i> Atrás</button>
-            <button class="btn btn-sage" onclick="go(2)">Continuar <i class="ti ti-arrow-right"></i></button>
+          <div class="btn-row" style="justify-content: space-between;">
+            <div>
+              <button class="btn btn-danger" onclick="cancelForm()">
+                <i class="ti ti-home"></i> Volver al Menú
+              </button>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn" onclick="go(0)"><i class="ti ti-arrow-left"></i> Atrás</button>
+              <button class="btn btn-sage" onclick="go(2)">Continuar <i class="ti ti-arrow-right"></i></button>
+            </div>
           </div>
         </div>
 
@@ -344,28 +355,35 @@
           
           <div class="divider"></div>
           
-          <!-- SECCIÓN INTERNA PARA EL TERAPEUTA -->
-          <div class="section-pill" style="background-color: var(--teal-light); border-color: rgba(74, 158, 154, 0.2);">
-            <i class="ti ti-lock" style="color: var(--teal-main);"></i>
-            <span style="color: var(--teal-dark);">Sección Interna Clínica (Administrativo)</span>
-          </div>
-
-
-          
-          <div class="grid1" style="margin-top: 1.25rem;">
-            <div class="field">
-              <label class="lbl" for="obs"><i class="ti ti-eye"></i> Observaciones clínicas y conducta no verbal</label>
-              <textarea id="obs" placeholder="Registro de gestos, cruces de miradas, defensividad, llanto, dinamismo de la sesión..."></textarea>
+          <div id="internal-clinic-section">
+            <!-- SECCIÓN INTERNA PARA EL TERAPEUTA -->
+            <div class="section-pill" style="background-color: var(--teal-light); border-color: rgba(74, 158, 154, 0.2);">
+              <i class="ti ti-lock" style="color: var(--teal-main);"></i>
+              <span style="color: var(--teal-dark);">Sección Interna Clínica (Administrativo)</span>
             </div>
-            <div class="field">
-              <label class="lbl" for="tar"><i class="ti ti-notes"></i> Tarea terapéutica asignada para el hogar</label>
-              <textarea id="tar" placeholder="Ej. Ejercicio de la caja de sugerencias, 10 min de apreciación diaria..."></textarea>
+            
+            <div class="grid1" style="margin-top: 1.25rem;">
+              <div class="field">
+                <label class="lbl" for="obs"><i class="ti ti-eye"></i> Observaciones clínicas y conducta no verbal</label>
+                <textarea id="obs" placeholder="Registro de gestos, cruces de miradas, defensividad, llanto, dinamismo de la sesión..."></textarea>
+              </div>
+              <div class="field">
+                <label class="lbl" for="tar"><i class="ti ti-notes"></i> Tarea terapéutica asignada para el hogar</label>
+                <textarea id="tar" placeholder="Ej. Ejercicio de la caja de sugerencias, 10 min de apreciación diaria..."></textarea>
+              </div>
             </div>
           </div>
           
-          <div class="btn-row">
-            <button class="btn" onclick="go(1)"><i class="ti ti-arrow-left"></i> Atrás</button>
-            <button class="btn btn-sage" onclick="go(3)">Continuar <i class="ti ti-arrow-right"></i></button>
+          <div class="btn-row" style="justify-content: space-between;">
+            <div>
+              <button class="btn btn-danger" onclick="cancelForm()">
+                <i class="ti ti-home"></i> Volver al Menú
+              </button>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn" onclick="go(1)"><i class="ti ti-arrow-left"></i> Atrás</button>
+              <button class="btn btn-sage" onclick="go(3)">Continuar <i class="ti ti-arrow-right"></i></button>
+            </div>
           </div>
         </div>
 
@@ -425,7 +443,7 @@
           
           <div class="divider"></div>
           
-          <div class="grid2">
+          <div class="grid2" id="next-session-section">
             <div class="field">
               <label class="lbl" for="prox"><i class="ti ti-calendar-event"></i> Fecha de próxima sesión</label>
               <input type="date" id="prox">
@@ -441,11 +459,18 @@
             </div>
           </div>
           
-          <div class="btn-row">
-            <button class="btn" onclick="go(2)"><i class="ti ti-arrow-left"></i> Atrás</button>
-            <button class="btn btn-sage" onclick="go(4)">
-              Ver Resumen <i class="ti ti-clipboard-check"></i>
-            </button>
+          <div class="btn-row" style="justify-content: space-between;">
+            <div>
+              <button class="btn btn-danger" onclick="cancelForm()">
+                <i class="ti ti-home"></i> Volver al Menú
+              </button>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn" onclick="go(2)"><i class="ti ti-arrow-left"></i> Atrás</button>
+              <button class="btn btn-sage" onclick="go(4)">
+                Ver Resumen <i class="ti ti-clipboard-check"></i>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -480,19 +505,26 @@
               <button class="btn" onclick="go(3)"><i class="ti ti-edit"></i> Corregir datos</button>
             </div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-              <button class="btn" onclick="cancelForm()"><i class="ti ti-arrow-back-up"></i> Cancelar</button>
-              <button class="btn btn-teal" onclick="copyAIPrompt()">
-                Copiar Prompt IA <i class="ti ti-sparkles"></i>
-              </button>
-              <button class="btn btn-teal" style="background-color: var(--teal-main); border-color: var(--teal-main);" onclick="saveAndShareQuestions()">
-                Enviar Preguntas <i class="ti ti-share"></i>
-              </button>
-              <button class="btn" onclick="saveActiveSession('Programado')" style="background-color: #f3e8ff; color: #6b21a8; border: 1px solid rgba(107,33,168,0.2);">
-                <i class="ti ti-calendar-time"></i> Programar Sesión
-              </button>
-              <button class="btn btn-sage" onclick="saveActiveSession('Finalizado')">
-                Finalizar y Guardar Sesión <i class="ti ti-device-floppy"></i>
-              </button>
+              <div id="editor-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="btn btn-danger" onclick="cancelForm()"><i class="ti ti-home"></i> Volver al Menú</button>
+                <button class="btn btn-teal" onclick="copyAIPrompt()">
+                  Copiar Prompt IA <i class="ti ti-sparkles"></i>
+                </button>
+                <button class="btn btn-teal" style="background-color: var(--teal-main); border-color: var(--teal-main);" onclick="saveAndShareQuestions()">
+                  Enviar Preguntas <i class="ti ti-share"></i>
+                </button>
+                <button class="btn" onclick="saveActiveSession('Programado')" style="background-color: #f3e8ff; color: #6b21a8; border: 1px solid rgba(107,33,168,0.2);">
+                  <i class="ti ti-calendar-time"></i> Programar Sesión
+                </button>
+                <button class="btn btn-sage" onclick="saveActiveSession('Finalizado')">
+                  Finalizar y Guardar Sesión <i class="ti ti-device-floppy"></i>
+                </button>
+              </div>
+              <div id="review-actions" style="display: none;">
+                <button class="btn btn-sage" style="background-color: var(--sage-main); border-color: var(--sage-main);" onclick="cancelForm()">
+                  Finalizar <i class="ti ti-check"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>

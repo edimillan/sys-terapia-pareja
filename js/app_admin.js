@@ -5,6 +5,7 @@
 
 let curStep = 0;
 let sessions = [];
+let reviewMode = false;
 let activeSession = {
   id: "",
   n1: "", n2: "",
@@ -167,8 +168,11 @@ async function loadAdminDashboard() {
         let actionsHtml = "";
         if (s.status === "Nuevo Registro") {
           actionsHtml = `
-            <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; background-color: var(--teal-main); border-color: var(--teal-main);" onclick="loadSessionEditor('${s.id}')">
-              <i class="ti ti-pencil-edit"></i> Revisar y Asignar
+            <button class="btn btn-sage" style="padding: 0.35rem 0.5rem; font-size: 0.75rem; background-color: var(--sage-main); border-color: var(--sage-main);" onclick="loadSessionEditor('${s.id}', true)">
+              <i class="ti ti-eye"></i> Revisar
+            </button>
+            <button class="btn btn-teal" style="padding: 0.35rem 0.5rem; font-size: 0.75rem;" onclick="loadSessionEditor('${s.id}', false)">
+              <i class="ti ti-calendar-time"></i> Asignar Sesión
             </button>
           `;
         } else if (s.status === "Resuelto" || s.status === "Respuestas Completadas" || s.status === "Programado") {
@@ -344,7 +348,9 @@ function setDemographicsEditable(editable) {
 
 
 
-async function loadSessionEditor(id) {
+async function loadSessionEditor(id, isReviewOnly = false) {
+  reviewMode = isReviewOnly;
+  
   const allSess = await fetchAllSessions(verifiedPassword);
   const session = allSess.find(s => s.id === id);
   if (!session) return;
@@ -363,17 +369,17 @@ async function loadSessionEditor(id) {
     }
   });
 
-  // Los campos de asignación (ns, ter, fec) son editables siempre que la sesión no esté finalizada/completada
-  const isSessionEditable = activeSession.status !== "Finalizado" && activeSession.status !== "Completado";
+  // Los campos de asignación (ns, ter, fec) son editables siempre que la sesión no esté finalizada/completada y no sea revisión
+  const isSessionEditable = activeSession.status !== "Finalizado" && activeSession.status !== "Completado" && !reviewMode;
   setDemographicsEditable(isSessionEditable);
 
   // Cargar y renderizar preguntas dinámicas
   activeSession.questions = getSessionQuestions(activeSession);
   renderQuestions();
 
-  // Si no tiene terapeuta asignado aún (ficha recién enviada por paciente), asignar terapeuta vacío o último
+  // Si no tiene terapeuta asignado aún y no es modo revisión, asignar terapeuta vacío o último
   const terInput = document.getElementById("ter");
-  if (terInput && !terInput.value && sessions.length > 0) {
+  if (terInput && !terInput.value && sessions.length > 0 && !reviewMode) {
     const completedOnes = sessions.filter(s => s.ter);
     if (completedOnes.length > 0) {
       terInput.value = completedOnes[0].ter;
@@ -391,8 +397,6 @@ async function loadSessionEditor(id) {
     }
   });
 
-
-
   // Marcar escala de compromiso
   document.querySelectorAll("#sc1 .snum").forEach(s => {
     const val = parseInt(s.textContent.trim());
@@ -403,20 +407,50 @@ async function loadSessionEditor(id) {
     }
   });
 
+  // Ajustar visibilidad según el modo de revisión
+  toggleReviewModeUI();
+
   // Mostrar editor
   document.getElementById("dashboard-section").style.display = "none";
   document.getElementById("wizard-section").style.display = "block";
   
   calcT();
   go(0);
-  showToast("Cargando expediente clínico...");
+  showToast(reviewMode ? "Abriendo vista de revisión..." : "Cargando expediente clínico...");
+}
+
+/**
+ * Ajusta la visibilidad de los elementos del asistente según reviewMode
+ */
+function toggleReviewModeUI() {
+  // 1. Campos de Paso 0: ns, ter y fec
+  const nsField = document.getElementById("field-ns");
+  const fecTerGrid = document.getElementById("grid-fec-ter");
+  if (nsField) nsField.style.display = reviewMode ? "none" : "block";
+  if (fecTerGrid) fecTerGrid.style.display = reviewMode ? "none" : "block";
+
+  // 2. Sección Interna Clínica del Paso 2
+  const internalClinic = document.getElementById("internal-clinic-section");
+  if (internalClinic) internalClinic.style.display = reviewMode ? "none" : "block";
+
+  // 3. Campos de agendamiento del Paso 3
+  const nextSession = document.getElementById("next-session-section");
+  if (nextSession) nextSession.style.display = reviewMode ? "none" : "block";
+
+  // 4. Botoneras del Paso 4
+  const editorActions = document.getElementById("editor-actions");
+  const reviewActions = document.getElementById("review-actions");
+  if (editorActions) editorActions.style.display = reviewMode ? "none" : "flex";
+  if (reviewActions) reviewActions.style.display = reviewMode ? "block" : "none";
 }
 
 /**
  * Cancela la edición y vuelve al listado
  */
 function cancelForm() {
-  // Asegurar que los campos vuelvan a ser editables por defecto
+  // Asegurar que los campos vuelvan a ser editables por defecto y el modo revisión se desactive
+  reviewMode = false;
+  toggleReviewModeUI();
   setDemographicsEditable(true);
   document.getElementById("wizard-section").style.display = "none";
   document.getElementById("dashboard-section").style.display = "block";
@@ -638,6 +672,13 @@ function buildSum() {
     });
   }
 
+  const homeworkCardHtml = reviewMode ? "" : `
+      <div class="sum-card" style="grid-column: span 2;">
+        <div class="sum-title">📝 Tarea Asignada para la casa</div>
+        <div class="sum-val">${activeSession.tar || 'Ninguna tarea asignada.'}</div>
+      </div>
+  `;
+
   sumcont.innerHTML = `
     <div class="sum-grid">
       <div class="sum-card">
@@ -666,10 +707,7 @@ function buildSum() {
           ${qHtml || 'No hay preguntas registradas.'}
         </div>
       </div>
-      <div class="sum-card" style="grid-column: span 2;">
-        <div class="sum-title">📝 Tarea Asignada para la casa</div>
-        <div class="sum-val">${activeSession.tar || 'Ninguna tarea asignada.'}</div>
-      </div>
+      ${homeworkCardHtml}
     </div>
   `;
 }
@@ -845,6 +883,10 @@ async function createNewSessionFromExisting(id) {
 
   // Hacer editables los campos de asignación (ns, ter, fec) para la nueva sesión
   setDemographicsEditable(true);
+
+  // Asegurar que el modo revisión esté desactivado
+  reviewMode = false;
+  toggleReviewModeUI();
 
   // Cargar y renderizar preguntas dinámicas vacías
   renderQuestions();
