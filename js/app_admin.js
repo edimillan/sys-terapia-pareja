@@ -133,7 +133,7 @@ async function loadAdminDashboard() {
   });
 
   // Dividir por estados
-  const pending = filtered.filter(s => s.status === "Nuevo Registro" || s.status === "Enviado" || s.status === "Resuelto" || s.status === "Sin Respuesta" || s.status === "Respuestas Completadas" || s.status === "Pendiente");
+  const pending = filtered.filter(s => s.status === "Nuevo Registro" || s.status === "Enviado" || s.status === "Resuelto" || s.status === "Sin Respuesta" || s.status === "Respuestas Completadas" || s.status === "Pendiente" || s.status === "Programado");
   const completed = filtered.filter(s => s.status === "Finalizado" || s.status === "Con Respuesta" || s.status === "Completado" || !s.status);
 
   // Renderizar Fichas Pendientes
@@ -156,6 +156,8 @@ async function loadAdminDashboard() {
           statusChip = `<span class="chip chip-blue" style="background-color: #e2f1ff; color: #1e74cd; border: 1px solid rgba(30,116,205,0.2);"><i class="ti ti-user-plus"></i> Nuevo Registro</span>`;
         } else if (s.status === "Resuelto" || s.status === "Respuestas Completadas") {
           statusChip = `<span class="chip chip-green"><i class="ti ti-circle-check"></i> Resuelto</span>`;
+        } else if (s.status === "Programado") {
+          statusChip = `<span class="chip chip-purple" style="background-color: #f3e8ff; color: #6b21a8; border: 1px solid rgba(107,33,168,0.2);"><i class="ti ti-calendar-time"></i> Programado</span>`;
         } else {
           // "Enviado", "Sin Respuesta", "Pendiente"
           statusChip = `<span class="chip chip-amber"><i class="ti ti-mail-forward"></i> Enviado</span>`;
@@ -169,7 +171,7 @@ async function loadAdminDashboard() {
               <i class="ti ti-pencil-edit"></i> Revisar y Asignar
             </button>
           `;
-        } else if (s.status === "Resuelto" || s.status === "Respuestas Completadas") {
+        } else if (s.status === "Resuelto" || s.status === "Respuestas Completadas" || s.status === "Programado") {
           // Quitar compartir por WhatsApp/Correo
           actionsHtml = `
             <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="loadSessionReview('${s.id}')">
@@ -476,7 +478,7 @@ function closeReviewSection() {
   loadAdminDashboard();
 }
 
-async function saveReviewSection() {
+async function saveReviewSection(targetStatus = 'Finalizado') {
   // Sincronizar motivos editados
   const m1Input = document.getElementById("rev-m1");
   const m2Input = document.getElementById("rev-m2");
@@ -522,7 +524,7 @@ async function saveReviewSection() {
   if (t4Input) activeSession.t4 = parseInt(t4Input.value) || 0;
 
   if (!activeSession.fec || !activeSession.ter) {
-    alert("Por favor, asigne una fecha y un terapeuta antes de finalizar la sesión.");
+    alert("Por favor, asigne una fecha y un terapeuta antes de guardar.");
     return;
   }
 
@@ -532,14 +534,67 @@ async function saveReviewSection() {
   }
 
   try {
-    activeSession.status = "Finalizado";
+    activeSession.status = targetStatus;
     
     await saveSession(activeSession, verifiedPassword);
-    showToast("Sesión finalizada e indexada en el historial clínico.");
+    if (targetStatus === 'Programado') {
+      showToast("📅 Sesión programada correctamente.");
+    } else {
+      showToast("Sesión finalizada e indexada en el historial clínico.");
+    }
     closeReviewSection();
   } catch (error) {
     alert("Error al guardar cambios: " + error.message);
   }
+}
+
+function downloadReviewPDF() {
+  // Sincronizar motivos editados
+  const m1Input = document.getElementById("rev-m1");
+  const m2Input = document.getElementById("rev-m2");
+  if (m1Input) activeSession.m1 = m1Input.value;
+  if (m2Input) activeSession.m2 = m2Input.value;
+
+  activeSession.areas = [...document.querySelectorAll("#rev-areas .tag.on")].map(t => t.textContent.trim());
+
+  const durSelect = document.getElementById("rev-dur");
+  const prevSelect = document.getElementById("rev-prev");
+  if (durSelect) activeSession.dur = durSelect.value;
+  if (prevSelect) activeSession.prev = prevSelect.value;
+
+  const selSnum = document.querySelector("#rev-sc1 .snum.on");
+  activeSession.sc1 = selSnum ? parseInt(selSnum.textContent.trim()) : "";
+
+  // Sincronizar asignación y notas
+  const nsInput = document.getElementById("rev-ns");
+  const fecInput = document.getElementById("rev-fec");
+  const terInput = document.getElementById("rev-ter");
+  const obsInput = document.getElementById("rev-obs");
+  const tarInput = document.getElementById("rev-tar");
+
+  if (nsInput) activeSession.ns = parseInt(nsInput.value) || 1;
+  if (fecInput) activeSession.fec = fecInput.value;
+  if (terInput) activeSession.ter = terInput.value.trim();
+  if (obsInput) activeSession.obs = obsInput.value;
+  if (tarInput) activeSession.tar = tarInput.value;
+
+  // Tiempos
+  const dtotInput = document.getElementById("rev-dtot");
+  const hiInput = document.getElementById("rev-hi");
+  const t1Input = document.getElementById("rev-t1");
+  const t2Input = document.getElementById("rev-t2");
+  const t3Input = document.getElementById("rev-t3");
+  const t4Input = document.getElementById("rev-t4");
+
+  if (dtotInput) activeSession.dtot = parseInt(dtotInput.value) || 60;
+  if (hiInput) activeSession.hi = hiInput.value;
+  if (t1Input) activeSession.t1 = parseInt(t1Input.value) || 0;
+  if (t2Input) activeSession.t2 = parseInt(t2Input.value) || 0;
+  if (t3Input) activeSession.t3 = parseInt(t3Input.value) || 0;
+  if (t4Input) activeSession.t4 = parseInt(t4Input.value) || 0;
+
+  // Exportar PDF usando la biblioteca export.js
+  exportPDF(activeSession);
 }
 
 async function loadSessionEditor(id) {

@@ -333,7 +333,13 @@
         <button class="btn" onclick="closeReviewSection()">
           <i class="ti ti-arrow-back-up"></i> Cancelar y Volver
         </button>
-        <button class="btn btn-sage" onclick="saveReviewSection()">
+        <button class="btn btn-teal" onclick="downloadReviewPDF()" style="background-color: var(--teal-main); border-color: var(--teal-main);">
+          <i class="ti ti-file-type-pdf"></i> Descargar PDF
+        </button>
+        <button class="btn" onclick="saveReviewSection('Programado')" style="background-color: #f3e8ff; color: #6b21a8; border: 1px solid rgba(107,33,168,0.2);">
+          <i class="ti ti-calendar-time"></i> Programar Sesión
+        </button>
+        <button class="btn btn-sage" onclick="saveReviewSection('Finalizado')">
           Finalizar y Guardar Sesión <i class="ti ti-device-floppy"></i>
         </button>
       </div>

@@ -82,7 +82,8 @@ Durante el desarrollo se identificaron y resolvieron los siguientes problemas cr
   correctamente '/admin.html', '/admin' y 'file://'.
 - BUG de Caché de Navegador: Cache-Busting dinámico (`_=${Date.now()}`) para evitar que se carguen
   versiones desactualizadas de las sesiones al refrescar el portal.
-- VISTA UNIFICADA DE REVISIÓN (DETALLE PENDIENTE): Se implementó una vista de revisión unificada (`#review-section` en admin.html y `loadSessionReview` en js/app_admin.js) para fichas con estado "Nuevo Registro" o "Resuelto". En ella, el terapeuta puede visualizar todas las respuestas y datos demográficos provistos por la pareja de solo lectura en una única pantalla, manteniendo editables los motivos, la asignación clínica (terapeuta, fecha, ns), observaciones y tiempos para finalizar el registro.
+- ESTADO PROGRAMADO: Se introdujo el estado "Programado" (etiqueta morada en el dashboard) para separar el agendamiento del completado clínico. Permite que una ficha de "Nuevo Registro" sea asignada a un terapeuta/fecha y guardada como "Programada" en la bandeja de entrada de pendientes, lista para ser completada con observaciones durante la sesión real y finalizada después.
+- EXPORTACIÓN PDF EN REVISIÓN: Se añadió el botón "Descargar PDF" en la vista unificada de revisión para posibilitar al psicólogo exportar un informe en PDF con la plantilla oficial directamente desde el detalle de la ficha pendiente.
 - CAMBIO DE NOMBRE DE PASO: Se renombró la tercera pestaña del formulario público (index.html) de "Sesión" a "Reflexión" para alinearlo con la terminología clínica del centro.
 - BUG de Renderizado de "undefined": Corregido usando `${item.a || ""}` en las plantillas de textareas.
 
