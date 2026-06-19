@@ -131,220 +131,8 @@
 
     </div>
 
-    <!-- ──────────────── VISTA DE DETALLE Y REVISIÓN DE CUESTIONARIOS RECIBIDOS ──────────────── -->
-    <div id="review-section" style="display: none; margin-top: 1rem;">
-      <div class="header" style="margin: -2.5rem -2.5rem 2rem; border-radius: 0; background-color: var(--teal-main);">
-        <div class="logo-circle" style="overflow: hidden;">
-          <img src="images/logo.png" alt="Logo TeAcompaño" style="width: 100%; height: 100%; object-fit: cover;">
-        </div>
-        <div class="header-text">
-          <h1 id="review-title">Revisar y Asignar Sesión</h1>
-          <p id="review-subtitle">Detalle del cuestionario respondido por la pareja</p>
-          <span class="brand-tag">Salud Mental 360 · TeAcompaño Centro Psicológico</span>
-        </div>
-      </div>
 
-      <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; align-items: start;">
-        
-        <!-- COLUMNA IZQUIERDA: RESPUESTAS DE LA PAREJA (SOLO LECTURA CON MOTIVOS EDITABLES) -->
-        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-          
-          <!-- Bloque de Datos de la Pareja -->
-          <div class="card" style="padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-light); background: var(--bg-card);">
-            <div class="section-pill" style="margin-top: 0; margin-bottom: 1rem; background-color: var(--sage-light); border-color: rgba(135,169,165,0.2);">
-              <i class="ti ti-users" style="color: var(--sage-main);"></i>
-              <span style="color: var(--sage-dark); font-weight: 700;">Datos de la Pareja</span>
-            </div>
-            <div id="rev-info-demographics" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem; line-height: 1.6;">
-              <!-- Cargado dinámicamente -->
-            </div>
-          </div>
 
-          <!-- Bloque de Motivos y Conflicto (Editable por si aumenta el motivo) -->
-          <div class="card" style="padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-light); background: var(--bg-card);">
-            <div class="section-pill" style="margin-top: 0; margin-bottom: 1rem; background-color: var(--sage-light); border-color: rgba(135,169,165,0.2);">
-              <i class="ti ti-alert-circle" style="color: var(--sage-main);"></i>
-              <span style="color: var(--sage-dark); font-weight: 700;">Motivo de Consulta y Conflicto (Editable)</span>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-              <div class="field">
-                <label class="lbl" for="rev-m1"><i class="ti ti-message"></i> Perspectiva e inquietud — Integrante 1</label>
-                <textarea id="rev-m1" placeholder="¿Qué la/lo trae a terapia hoy desde su perspectiva?" style="min-height: 80px;"></textarea>
-              </div>
-              <div class="field">
-                <label class="lbl" for="rev-m2"><i class="ti ti-message"></i> Perspectiva e inquietud — Integrante 2</label>
-                <textarea id="rev-m2" placeholder="¿Qué la/lo trae a terapia hoy desde su perspectiva?" style="min-height: 80px;"></textarea>
-              </div>
-              
-              <div class="field">
-                <label class="lbl"><i class="ti ti-tags"></i> Áreas de conflicto identificadas</label>
-                <div class="tag-wrap" id="rev-areas">
-                  <span class="tag" onclick="tog(this)">Comunicación</span>
-                  <span class="tag" onclick="tog(this)">Infidelidad</span>
-                  <span class="tag" onclick="tog(this)">Sexualidad</span>
-                  <span class="tag" onclick="tog(this)">Crianza</span>
-                  <span class="tag" onclick="tog(this)">Economía</span>
-                  <span class="tag" onclick="tog(this)">Distancia emocional</span>
-                  <span class="tag" onclick="tog(this)">Violencia verbal</span>
-                  <span class="tag" onclick="tog(this)">Roles en el hogar</span>
-                  <span class="tag" onclick="tog(this)">Familia de origen</span>
-                  <span class="tag" onclick="tog(this)">Celos</span>
-                  <span class="tag" onclick="tog(this)">Duelo / pérdidas</span>
-                  <span class="tag" onclick="tog(this)">Problemas laborales</span>
-                  <span class="tag" onclick="tog(this)">Otro</span>
-                </div>
-              </div>
-
-              <div class="grid2">
-                <div class="field">
-                  <label class="lbl" for="rev-dur"><i class="ti ti-hourglass-low"></i> Duración estimada del conflicto</label>
-                  <select id="rev-dur">
-                    <option value="">Seleccionar</option>
-                    <option value="Menos de 3 meses">Menos de 3 meses</option>
-                    <option value="3–6 meses">3–6 meses</option>
-                    <option value="6–12 meses">6–12 meses</option>
-                    <option value="1–3 años">1–3 años</option>
-                    <option value="Más de 3 años">Más de 3 años</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label class="lbl" for="rev-prev"><i class="ti ti-history"></i> Proceso de terapia previo</label>
-                  <select id="rev-prev">
-                    <option value="">Seleccionar</option>
-                    <option value="No">No</option>
-                    <option value="Sí, como pareja">Sí, como pareja</option>
-                    <option value="Sí, individual">Sí, individual</option>
-                    <option value="Ambas modalidades">Ambas modalidades</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="field">
-                <label class="lbl"><i class="ti ti-heart-rate-monitor"></i> Nivel de compromiso actual percibido con la relación (Ambos)</label>
-                <div class="scale-wrap" id="rev-sc1">
-                  <span class="snum" onclick="scl('rev-sc1', this)">1</span>
-                  <span class="snum" onclick="scl('rev-sc1', this)">2</span>
-                  <span class="snum" onclick="scl('rev-sc1', this)">3</span>
-                  <span class="snum" onclick="scl('rev-sc1', this)">4</span>
-                  <span class="snum" onclick="scl('rev-sc1', this)">5</span>
-                  <span class="snum" onclick="scl('rev-sc1', this)">6</span>
-                  <span class="snum" onclick="scl('rev-sc1', this)">7</span>
-                  <span class="snum" onclick="scl('rev-sc1', this)">8</span>
-                  <span class="snum" onclick="scl('rev-sc1', this)">9</span>
-                  <span class="snum" onclick="scl('rev-sc1', this)">10</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Bloque de Respuestas del Cuestionario -->
-          <div class="card" style="padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-light); background: var(--bg-card);">
-            <div class="section-pill" style="margin-top: 0; margin-bottom: 1rem; background-color: var(--sage-light); border-color: rgba(135,169,165,0.2);">
-              <i class="ti ti-message-dots" style="color: var(--sage-main);"></i>
-              <span style="color: var(--sage-dark); font-weight: 700;">Respuestas al Cuestionario</span>
-            </div>
-            <div id="rev-info-questions" style="display: flex; flex-direction: column; gap: 1.25rem;">
-              <!-- Cargado dinámicamente -->
-            </div>
-          </div>
-
-        </div>
-
-        <!-- COLUMNA DERECHA: ASIGNACIÓN Y NOTAS CLÍNICAS (EDITABLE) -->
-        <div style="display: flex; flex-direction: column; gap: 1.5rem; position: sticky; top: 1rem;">
-          
-          <div class="card" style="padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--teal-light); background: var(--bg-card); box-shadow: var(--shadow-sm);">
-            <div class="section-pill" style="margin-top: 0; margin-bottom: 1rem; background-color: var(--teal-light); border-color: rgba(74,158,154,0.2);">
-              <i class="ti ti-lock" style="color: var(--teal-main);"></i>
-              <span style="color: var(--teal-dark); font-weight: 700;">Asignación de Sesión</span>
-            </div>
-            
-            <div class="grid2" style="margin-bottom: 1rem;">
-              <div class="field">
-                <label class="lbl" for="rev-ns"><i class="ti ti-list-numbers"></i> N° de Sesión</label>
-                <input type="number" id="rev-ns" min="1">
-              </div>
-              <div class="field">
-                <label class="lbl" for="rev-fec"><i class="ti ti-calendar"></i> Fecha de Sesión</label>
-                <input type="date" id="rev-fec">
-              </div>
-            </div>
-            
-            <div class="field" style="margin-bottom: 1rem;">
-              <label class="lbl" for="rev-ter"><i class="ti ti-certificate"></i> Terapeuta a cargo</label>
-              <input type="text" id="rev-ter" placeholder="Ej. Dra. Sofía Ramírez">
-            </div>
-
-            <div class="field" style="margin-bottom: 1rem;">
-              <label class="lbl" for="rev-obs"><i class="ti ti-eye"></i> Observaciones clínicas y conducta no verbal</label>
-              <textarea id="rev-obs" placeholder="Registro de gestos, cruces de miradas, defensividad, llanto, dinamismo de la sesión..." style="min-height: 80px;"></textarea>
-            </div>
-            
-            <div class="field" style="margin-bottom: 1rem;">
-              <label class="lbl" for="rev-tar"><i class="ti ti-notes"></i> Tarea terapéutica asignada para el hogar</label>
-              <textarea id="rev-tar" placeholder="Ej. Ejercicio de la caja de sugerencias, 10 min de apreciación diaria..." style="min-height: 80px;"></textarea>
-            </div>
-          </div>
-
-          <!-- Bloque de Tiempo Clínico -->
-          <div class="card" style="padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-light); background: var(--bg-card);">
-            <div class="section-pill" style="margin-top: 0; margin-bottom: 1rem; background-color: var(--sage-light); border-color: rgba(135,169,165,0.2);">
-              <i class="ti ti-clock" style="color: var(--sage-main);"></i>
-              <span style="color: var(--sage-dark); font-weight: 700;">Distribución de Tiempos</span>
-            </div>
-            
-            <div class="grid2" style="margin-bottom: 0.75rem;">
-              <div class="field">
-                <label class="lbl" for="rev-dtot">Duración total (min)</label>
-                <input type="number" id="rev-dtot" min="30" max="180" value="60">
-              </div>
-              <div class="field">
-                <label class="lbl" for="rev-hi">Hora Inicio</label>
-                <input type="time" id="rev-hi" value="09:00">
-              </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.8rem;">
-              <div class="field">
-                <label class="lbl" style="font-size: 0.75rem;">Apertura (min)</label>
-                <input type="number" id="rev-t1" value="10" min="0">
-              </div>
-              <div class="field">
-                <label class="lbl" style="font-size: 0.75rem;">Exploración (min)</label>
-                <input type="number" id="rev-t2" value="20" min="0">
-              </div>
-              <div class="field">
-                <label class="lbl" style="font-size: 0.75rem;">Intervención (min)</label>
-                <input type="number" id="rev-t3" value="20" min="0">
-              </div>
-              <div class="field">
-                <label class="lbl" style="font-size: 0.75rem;">Cierre (min)</label>
-                <input type="number" id="rev-t4" value="10" min="0">
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-
-      <!-- BOTONES DE ACCIÓN INFERIORES -->
-      <div class="btn-row" style="margin-top: 2rem; justify-content: flex-end; gap: 1rem; border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
-        <button class="btn" onclick="closeReviewSection()">
-          <i class="ti ti-arrow-back-up"></i> Cancelar y Volver
-        </button>
-        <button class="btn btn-teal" onclick="downloadReviewPDF()" style="background-color: var(--teal-main); border-color: var(--teal-main);">
-          <i class="ti ti-file-type-pdf"></i> Descargar PDF
-        </button>
-        <button class="btn" onclick="saveReviewSection('Programado')" style="background-color: #f3e8ff; color: #6b21a8; border: 1px solid rgba(107,33,168,0.2);">
-          <i class="ti ti-calendar-time"></i> Programar Sesión
-        </button>
-        <button class="btn btn-sage" onclick="saveReviewSection('Finalizado')">
-          Finalizar y Guardar Sesión <i class="ti ti-device-floppy"></i>
-        </button>
-      </div>
-
-    </div>
 
     <!-- ──────────────── ASISTENTE / EDITOR CLÍNICO COMPLETO ──────────────── -->
     <div id="wizard-section" style="display: none;">
@@ -353,7 +141,7 @@
       <div class="stepper" id="stepper">
         <div class="step active" onclick="go(0)"><i class="ti ti-users"></i>Pareja</div>
         <div class="step" onclick="go(1)"><i class="ti ti-alert-circle"></i>Motivo</div>
-        <div class="step" onclick="go(2)"><i class="ti ti-message-dots"></i>Sesión</div>
+        <div class="step" onclick="go(2)"><i class="ti ti-message-dots"></i>Reflexión</div>
         <div class="step" onclick="go(3)"><i class="ti ti-clock"></i>Tiempo</div>
         <div class="step" onclick="go(4)"><i class="ti ti-clipboard-check"></i>Resumen</div>
       </div>
@@ -538,7 +326,7 @@
 
         <!-- ── PASO 2: PREGUNTAS CLAVE & SECCIÓN INTERNA ── -->
         <div class="page" id="p2">
-          <div class="section-pill"><i class="ti ti-message-dots"></i><span>Respuestas e Intervención Interna</span></div>
+          <div class="section-pill"><i class="ti ti-message-dots"></i><span>Reflexiones e Intervención Interna</span></div>
           
           <!-- Preguntas llenadas por la pareja -->
           <div id="questions-container" style="display: flex; flex-direction: column; gap: 1.5rem;">
@@ -691,7 +479,7 @@
             <div>
               <button class="btn" onclick="go(3)"><i class="ti ti-edit"></i> Corregir datos</button>
             </div>
-            <div style="display: flex; gap: 0.5rem;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
               <button class="btn" onclick="cancelForm()"><i class="ti ti-arrow-back-up"></i> Cancelar</button>
               <button class="btn btn-teal" onclick="copyAIPrompt()">
                 Copiar Prompt IA <i class="ti ti-sparkles"></i>
@@ -699,7 +487,10 @@
               <button class="btn btn-teal" style="background-color: var(--teal-main); border-color: var(--teal-main);" onclick="saveAndShareQuestions()">
                 Enviar Preguntas <i class="ti ti-share"></i>
               </button>
-              <button class="btn btn-sage" onclick="saveActiveSession()">
+              <button class="btn" onclick="saveActiveSession('Programado')" style="background-color: #f3e8ff; color: #6b21a8; border: 1px solid rgba(107,33,168,0.2);">
+                <i class="ti ti-calendar-time"></i> Programar Sesión
+              </button>
+              <button class="btn btn-sage" onclick="saveActiveSession('Finalizado')">
                 Finalizar y Guardar Sesión <i class="ti ti-device-floppy"></i>
               </button>
             </div>
