@@ -267,6 +267,13 @@ function renderQuestions() {
  * Envía el formulario finalizado a la base de datos (Cloudflare KV o LocalStorage)
  */
 async function submitPatientForm() {
+  const submitBtn = document.querySelector(".btn-row button.btn-sage");
+  if (submitBtn) {
+    if (submitBtn.disabled) return;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = 'Enviando... <i class="ti ti-loader-2"></i>';
+  }
+
   syncFormToActiveSession();
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -274,6 +281,10 @@ async function submitPatientForm() {
 
   if (!sessionId && (!activeSession.n1 || !activeSession.n2)) {
     alert("Por favor, completen los nombres de ambos integrantes.");
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Enviar Formulario a Revisión <i class="ti ti-send"></i>';
+    }
     go(0);
     return;
   }
@@ -325,9 +336,14 @@ async function submitPatientForm() {
     // Mostrar pantalla de éxito y limpiar
     showSuccessScreen();
   } catch (error) {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Enviar Formulario a Revisión <i class="ti ti-send"></i>';
+    }
     alert("Hubo un problema al enviar sus datos: " + error.message);
   }
 }
+
 
 /**
  * Reemplaza el formulario con un mensaje de éxito estético
