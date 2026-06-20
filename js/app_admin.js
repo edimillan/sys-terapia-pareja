@@ -138,6 +138,7 @@ async function loadAdminDashboard(silent = false) {
   }
 
   const pendingTbody = document.getElementById("pending-tbody");
+  const processTbody = document.getElementById("process-tbody");
   const completedTbody = document.getElementById("completed-tbody");
   const searchInput = document.getElementById("db-search");
   const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
@@ -149,7 +150,8 @@ async function loadAdminDashboard(silent = false) {
   });
 
   // Dividir por estados
-  const pending = filtered.filter(s => s.status === "Nuevo Registro" || s.status === "Enviado" || s.status === "Resuelto" || s.status === "Sin Respuesta" || s.status === "Respuestas Completadas" || s.status === "Pendiente" || s.status === "Programado");
+  const pending = filtered.filter(s => s.status === "Nuevo Registro");
+  const inProcess = filtered.filter(s => s.status === "En Proceso" || s.status === "Resuelto" || s.status === "Enviado" || s.status === "Sin Respuesta" || s.status === "Respuestas Completadas" || s.status === "Pendiente" || s.status === "Programado");
   const completed = filtered.filter(s => s.status === "Finalizado" || s.status === "Con Respuesta" || s.status === "Completado" || !s.status);
 
   // Renderizar Fichas Pendientes
@@ -167,50 +169,73 @@ async function loadAdminDashboard(silent = false) {
       `;
     } else {
       pendingTbody.innerHTML = pending.map(s => {
-        let statusChip = "";
-        if (s.status === "Nuevo Registro") {
-          statusChip = `<span class="chip chip-blue" style="background-color: #e2f1ff; color: #1e74cd; border: 1px solid rgba(30,116,205,0.2);"><i class="ti ti-user-plus"></i> Nuevo Registro</span>`;
-        } else if (s.status === "Resuelto" || s.status === "Respuestas Completadas") {
-          statusChip = `<span class="chip chip-green"><i class="ti ti-circle-check"></i> Resuelto</span>`;
-        } else if (s.status === "Programado") {
-          statusChip = `<span class="chip chip-purple" style="background-color: #f3e8ff; color: #6b21a8; border: 1px solid rgba(107,33,168,0.2);"><i class="ti ti-calendar-time"></i> Programado</span>`;
-        } else {
-          // "Enviado", "Sin Respuesta", "Pendiente"
-          statusChip = `<span class="chip chip-amber"><i class="ti ti-mail-forward"></i> Enviado</span>`;
-        }
+        let statusChip = `<span class="chip chip-blue" style="background-color: #e2f1ff; color: #1e74cd; border: 1px solid rgba(30,116,205,0.2);"><i class="ti ti-user-plus"></i> Nuevo Registro</span>`;
 
         // Acciones
-        let actionsHtml = "";
-        if (s.status === "Nuevo Registro") {
-          actionsHtml = `
-            <button class="btn btn-sage" style="padding: 0.35rem 0.5rem; font-size: 0.75rem; background-color: var(--sage-main); border-color: var(--sage-main);" onclick="loadSessionEditor('${s.id}', true)">
-              <i class="ti ti-eye"></i> Revisar
-            </button>
-            <button class="btn btn-teal" style="padding: 0.35rem 0.5rem; font-size: 0.75rem;" onclick="loadSessionEditor('${s.id}', false)">
-              <i class="ti ti-calendar-time"></i> Asignar Sesión
-            </button>
-          `;
-        } else if (s.status === "Resuelto" || s.status === "Respuestas Completadas" || s.status === "Programado") {
-          // Quitar compartir por WhatsApp/Correo
-          actionsHtml = `
-            <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="loadSessionEditor('${s.id}')">
-              <i class="ti ti-pencil-edit"></i> Completar Sesión
-            </button>
-          `;
+        let actionsHtml = `
+          <button class="btn btn-sage" style="padding: 0.35rem 0.5rem; font-size: 0.75rem; background-color: var(--sage-main); border-color: var(--sage-main);" onclick="loadSessionEditor('${s.id}', true)">
+            <i class="ti ti-eye"></i> Revisar
+          </button>
+          <button class="btn btn-teal" style="padding: 0.35rem 0.5rem; font-size: 0.75rem;" onclick="loadSessionEditor('${s.id}', false)">
+            <i class="ti ti-calendar-time"></i> Asignar Sesión
+          </button>
+          <button class="action-btn del" title="Eliminar" onclick="confirmDelete('${s.id}', '${s.n1}', '${s.n2}')">
+            <i class="ti ti-trash"></i>
+          </button>
+        `;
+
+        return `
+          <tr>
+            <td style="font-weight: 600; color: var(--sage-dark);">
+              ${s.n1 || '—'} <span style="font-weight: normal; color: var(--text-light);">y</span> ${s.n2 || '—'}
+            </td>
+            <td>${s.fec_envio || s.fec || '—'}</td>
+            <td style="text-align: center;">${statusChip}</td>
+            <td>
+              <div class="actions">
+                ${actionsHtml}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+
+  // Renderizar Sesiones en Proceso (Seguimiento)
+  if (processTbody) {
+    if (inProcess.length === 0) {
+      processTbody.innerHTML = `
+        <tr>
+          <td colspan="4">
+            <div class="empty-state" style="padding: 2rem 1rem;">
+              <i class="ti ti-loader-3"></i>
+              <p>No hay sesiones en proceso actualmente.</p>
+            </div>
+          </td>
+        </tr>
+      `;
+    } else {
+      processTbody.innerHTML = inProcess.map(s => {
+        let statusChip = "";
+        let isFinalizeEnabled = false;
+
+        if (s.status === "Resuelto" || s.status === "Respuestas Completadas") {
+          statusChip = `<span class="chip chip-green"><i class="ti ti-circle-check"></i> Resuelto</span>`;
+          isFinalizeEnabled = true;
         } else {
-          // "Enviado". Mostrar compartir y completar
-          actionsHtml = `
-            <button class="action-btn" title="Compartir enlace de preguntas" onclick="openShareModal('${s.id}')" style="background-color: var(--teal-light); color: var(--teal-dark);">
-              <i class="ti ti-share"></i>
-            </button>
-            <button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="loadSessionEditor('${s.id}')">
-              <i class="ti ti-pencil-edit"></i> Completar Sesión
-            </button>
-          `;
+          statusChip = `<span class="chip chip-amber" style="background-color: #fef3c7; color: #d97706; border: 1px solid rgba(217,119,6,0.2);"><i class="ti ti-hourglass-low"></i> En Proceso</span>`;
         }
 
-        // Agregar botón borrar
-        actionsHtml += `
+        const finalizeBtn = isFinalizeEnabled 
+          ? `<button class="btn btn-sage" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; background-color: var(--sage-main); border-color: var(--sage-main);" onclick="loadSessionEditor('${s.id}', false)"><i class="ti ti-checkbox"></i> Finalizar Sesión</button>`
+          : `<button class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; background-color: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; cursor: not-allowed;" disabled><i class="ti ti-checkbox"></i> Finalizar Sesión</button>`;
+
+        let actionsHtml = `
+          <button class="action-btn" title="Compartir enlace de preguntas" onclick="openShareModal('${s.id}')" style="background-color: var(--teal-light); color: var(--teal-dark);">
+            <i class="ti ti-share"></i>
+          </button>
+          ${finalizeBtn}
           <button class="action-btn del" title="Eliminar" onclick="confirmDelete('${s.id}', '${s.n1}', '${s.n2}')">
             <i class="ti ti-trash"></i>
           </button>
@@ -398,8 +423,12 @@ async function loadSessionEditor(id, isReviewOnly = false) {
   const isSessionEditable = activeSession.status !== "Finalizado" && activeSession.status !== "Completado";
   setDemographicsEditable(isSessionEditable);
 
-  // Cargar y renderizar preguntas dinámicas
-  activeSession.questions = getSessionQuestions(activeSession);
+  // Cargar y renderizar preguntas dinámicas. Si es asignación inicial (Nuevo Registro), vaciar preguntas
+  if (!reviewMode && activeSession.status === "Nuevo Registro") {
+    activeSession.questions = [];
+  } else {
+    activeSession.questions = getSessionQuestions(activeSession);
+  }
   renderQuestions();
 
 
@@ -460,6 +489,11 @@ function toggleReviewModeUI() {
   if (editorActions) editorActions.style.display = reviewMode ? "none" : "flex";
   if (reviewActions) reviewActions.style.display = reviewMode ? "block" : "none";
 
+  const editorQuestionsActions = document.getElementById("editor-questions-actions");
+  if (editorQuestionsActions) {
+    editorQuestionsActions.style.display = reviewMode ? "none" : "flex";
+  }
+
   // Ocultar paso 3 (Tiempo) de la cabecera del stepper en modo revisión
   const steps = document.querySelectorAll(".stepper .step");
   if (steps.length > 3) {
@@ -519,12 +553,18 @@ async function saveActiveSession(targetStatus = 'Finalizado') {
     activeSession.status = targetStatus;
     
     await saveSession(activeSession, verifiedPassword);
-    if (targetStatus === 'Programado') {
+    
+    if (targetStatus === 'En Proceso') {
+      showToast("Sesión guardada en proceso. Abriendo opciones para compartir...");
+      cancelForm();
+      openShareModal(activeSession.id);
+    } else if (targetStatus === 'Programado') {
       showToast("📅 Sesión programada correctamente.");
+      cancelForm();
     } else {
       showToast("Expediente guardado e indexado en el historial.");
+      cancelForm();
     }
-    cancelForm();
   } catch (error) {
     alert("Error al guardar cambios: " + error.message);
   }
@@ -825,13 +865,29 @@ function renderQuestions() {
   activeSession.questions.forEach((item, idx) => {
     const card = document.createElement("div");
     card.className = "q-card";
-    card.innerHTML = `
-      <div style="margin-bottom: 0.5rem;">
-        <span style="font-weight: 600; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-body); display: block;">${item.q}</span>
-        <input type="hidden" class="q-input" value="${item.q}">
-      </div>
-      <textarea class="q-textarea" placeholder="Respuesta del paciente/terapeuta..." style="width: 100%; min-height: 80px;">${item.a || ''}</textarea>
-    `;
+    
+    if (reviewMode) {
+      // Modo revisión: estático
+      card.innerHTML = `
+        <div style="margin-bottom: 0.5rem;">
+          <span style="font-weight: 600; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-body); display: block;">${item.q}</span>
+          <input type="hidden" class="q-input" value="${item.q}">
+        </div>
+        <textarea class="q-textarea" placeholder="Respuesta del paciente/terapeuta..." style="width: 100%; min-height: 80px;">${item.a || ''}</textarea>
+      `;
+    } else {
+      // Modo editor: editable y borrable
+      card.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 0.5rem;">
+          <input type="text" class="q-input" value="${item.q}" placeholder="Escribe la pregunta..." style="font-weight: 600; width: 100%; border: none; border-bottom: 1px solid var(--border-color); background: transparent; padding: 4px 0; font-size: 0.95rem; color: var(--sage-dark); font-family: var(--font-body);">
+          <button type="button" class="action-btn del" onclick="deleteQuestion(${idx})" title="Eliminar pregunta" style="background: none; border: none; color: var(--danger); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; padding: 4px;">
+            <i class="ti ti-trash"></i>
+          </button>
+        </div>
+        <textarea class="q-textarea" placeholder="Respuesta del paciente/terapeuta..." style="width: 100%; min-height: 80px;">${item.a || ''}</textarea>
+      `;
+    }
+    
     container.appendChild(card);
   });
 }
