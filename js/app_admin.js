@@ -377,6 +377,11 @@ async function loadSessionEditor(id, isReviewOnly = false) {
 
   activeSession = { ...session };
 
+  // Asignar por defecto sesión 1 si no está definida
+  if (!activeSession.ns) {
+    activeSession.ns = 1;
+  }
+
   // Llenar inputs de texto
   const fields = ['n1', 'n2', 'a1', 'a2', 'rel', 'est', 'hij', 'ns', 'fec', 'ter', 
                   'm1', 'm2', 'dur', 'prev', 'obs', 'tar',
@@ -435,11 +440,11 @@ async function loadSessionEditor(id, isReviewOnly = false) {
  * Ajusta la visibilidad de los elementos del asistente según reviewMode
  */
 function toggleReviewModeUI() {
-  // 1. Campos de Paso 0: ns, ter y fec
-  const nsField = document.getElementById("field-ns");
-  const fecTerGrid = document.getElementById("grid-fec-ter");
-  if (nsField) nsField.style.display = reviewMode ? "none" : "block";
-  if (fecTerGrid) fecTerGrid.style.display = reviewMode ? "none" : "block";
+  // 1. Campos de Paso 0 y Paso 2: fec y grid-ns-ter
+  const fecField = document.getElementById("field-fec");
+  const nsTerGrid = document.getElementById("grid-ns-ter");
+  if (fecField) fecField.style.display = reviewMode ? "none" : "block";
+  if (nsTerGrid) nsTerGrid.style.display = reviewMode ? "none" : "grid";
 
   // 2. Sección Interna Clínica del Paso 2
   const internalClinic = document.getElementById("internal-clinic-section");
@@ -569,6 +574,12 @@ function go(stepIdx) {
   }
   document.getElementById("prog").style.width = `${progWidth}%`;
   
+  if (stepIdx === 3) {
+    const terVal = document.getElementById("ter") ? document.getElementById("ter").value : "";
+    const nameEl = document.getElementById("p3-therapist-name");
+    if (nameEl) nameEl.textContent = terVal || "—";
+  }
+
   if (stepIdx === 4) {
     buildSum();
   }
@@ -717,7 +728,7 @@ function buildSum() {
       </div>
   `;
 
-  const dateCardTitle = reviewMode ? "📅 Fecha de Envío" : "📅 Fecha y Profesional";
+  const dateCardTitle = reviewMode ? "📅 Fecha de Envío" : "📅 Fecha y Terapeuta";
   const dateCardValue = reviewMode ? 
     (activeSession.fec_envio || activeSession.fec || '—') : 
     `${activeSession.fec || '—'} · Terapeuta: ${activeSession.ter || '—'}`;
