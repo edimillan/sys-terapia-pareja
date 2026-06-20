@@ -40,6 +40,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (importFile) {
     importFile.addEventListener("change", handleImportJSON);
   }
+
+  // Actualización automática del dashboard cada 5 segundos
+  setInterval(() => {
+    const dashboardSection = document.getElementById("dashboard-section");
+    const isDashboardVisible = dashboardSection && dashboardSection.style.display === "block";
+    const isLoggedIn = !onlineMode || verifiedPassword !== "";
+
+    if (isDashboardVisible && isLoggedIn) {
+      loadAdminDashboard(true);
+    }
+  }, 5000);
 });
 
 /**
@@ -113,12 +124,16 @@ function checkAndShowPortal() {
 /**
  * Carga y renderiza las dos bandejas del Dashboard (Pendientes y Completados)
  */
-async function loadAdminDashboard() {
+async function loadAdminDashboard(silent = false) {
   try {
     sessions = await fetchAllSessions(verifiedPassword);
   } catch (e) {
-    alert("Error al cargar sesiones: " + e.message);
-    logoutAdmin();
+    if (!silent) {
+      alert("Error al cargar sesiones: " + e.message);
+      logoutAdmin();
+    } else {
+      console.warn("Silent dashboard refresh failed:", e);
+    }
     return;
   }
 
