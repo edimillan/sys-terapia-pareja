@@ -128,9 +128,14 @@
       </div>
 
       <!-- SECCIÓN B: HISTORIAL CLÍNICO COMPLETADO -->
-      <div class="section-pill">
-        <i class="ti ti-archive"></i>
-        <span>Historial Clínico (Sesiones Completadas)</span>
+      <div class="section-pill" style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <i class="ti ti-archive"></i>
+          <span>Historial Clínico (Sesiones Completadas)</span>
+        </div>
+        <button class="btn btn-teal" onclick="openNewSessionSelectorModal()" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; font-family: var(--font-body); border-radius: 20px; font-weight: 600;">
+          <i class="ti ti-plus"></i> Nueva Sesión de Pareja Existente
+        </button>
       </div>
       <div class="table-wrapper">
         <table class="sessions-table">
@@ -532,6 +537,9 @@
                 <button class="btn btn-sage" onclick="saveActiveSession('En Proceso')">
                   Guardar Sesión <i class="ti ti-device-floppy"></i>
                 </button>
+                <button class="btn btn-teal" id="btn-finalize-session" style="display: none;" onclick="saveActiveSession('Finalizado')">
+                  Finalizar Sesión <i class="ti ti-checkbox"></i>
+                </button>
               </div>
               <div id="review-actions" style="display: none;">
                 <button class="btn btn-sage" style="background-color: var(--sage-main); border-color: var(--sage-main);" onclick="saveActiveSession(activeSession.status)">
@@ -580,6 +588,41 @@
           <button class="btn btn-danger" style="margin-top: 0.5rem;" onclick="closeShareModal()">
             Cerrar Ventana
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL PARA SELECCIONAR PAREJA EXISTENTE Y ASIGNAR NUEVA SESIÓN -->
+    <div id="new-session-selector-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+      <div class="app-container" style="max-width: 500px; background-color: white; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); overflow: hidden; animation: slideUp 0.3s ease-out;">
+        <div class="header" style="padding: 1.25rem 1.5rem;">
+          <div class="header-text">
+            <h2 style="font-family: var(--font-display); color: white; font-size: 1.2rem; font-weight: 700; border-bottom: none; margin-bottom: 0; padding-bottom: 0;">Asignar Nueva Sesión</h2>
+            <p style="color: rgba(255,255,255,0.85); font-size: 0.8rem; margin-top: 2px;">Seleccione una pareja del historial clínico</p>
+          </div>
+        </div>
+        <div class="body-content" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+          <div class="field">
+            <label class="lbl" for="select-existing-couple"><i class="ti ti-users"></i> Seleccionar Pareja Registrada</label>
+            <select id="select-existing-couple" onchange="updateNewSessionNumberInfo()" style="width: 100%; padding: 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-family: var(--font-body); font-size: 0.9rem;">
+              <!-- Opciones cargadas dinámicamente -->
+            </select>
+          </div>
+          
+          <!-- Bloque de información dinámica del número de sesión -->
+          <div id="new-session-info-box" style="background-color: var(--sage-light); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 0.85rem; font-size: 0.85rem; color: var(--sage-dark); line-height: 1.5; display: none;">
+            <p style="margin-bottom: 4px;"><i class="ti ti-activity"></i> Última sesión registrada: <strong id="info-last-session-num">X</strong></p>
+            <p style="font-weight: 700; margin-bottom: 0;"><i class="ti ti-arrow-right"></i> Nueva sesión a crear: <span style="font-size: 1.05rem; color: var(--teal-dark);">Sesión N° <span id="info-next-session-num">Y</span></span></p>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <button class="btn btn-teal" style="flex: 1;" onclick="submitNewSessionFromSelector()">
+              Asignar Sesión <i class="ti ti-arrow-right"></i>
+            </button>
+            <button class="btn btn-danger" onclick="closeNewSessionSelectorModal()">
+              Cancelar
+            </button>
+          </div>
         </div>
       </div>
     </div>

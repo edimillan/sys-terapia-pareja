@@ -151,8 +151,8 @@ async function loadAdminDashboard(silent = false) {
 
   // Dividir por estados
   const pending = filtered.filter(s => s.status === "Nuevo Registro");
-  const inProcess = filtered.filter(s => s.status === "En Proceso" || s.status === "Cuestionario Enviado" || s.status === "Resuelto" || s.status === "Enviado" || s.status === "Sin Respuesta" || s.status === "Respuestas Completadas" || s.status === "Pendiente" || s.status === "Programado");
   const completed = filtered.filter(s => s.status === "Finalizado" || s.status === "Con Respuesta" || s.status === "Completado" || !s.status);
+  const inProcess = filtered.filter(s => s.status !== "Nuevo Registro" && s.status !== "Finalizado" && s.status !== "Con Respuesta" && s.status !== "Completado" && s.status);
 
   // Renderizar Fichas Pendientes
   if (pendingTbody) {
@@ -302,17 +302,11 @@ async function loadAdminDashboard(silent = false) {
             <td>
               <div class="actions">
                 ${plusButton}
-                <button class="action-btn" title="Compartir enlace" onclick="openShareModal('${s.id}')" style="background-color: var(--teal-light); color: var(--teal-dark);">
-                  <i class="ti ti-share"></i>
-                </button>
-                <button class="action-btn" title="Editar Sesión" onclick="loadSessionEditor('${s.id}')">
-                  <i class="ti ti-edit"></i>
+                <button class="action-btn" title="Ver Sesión" onclick="loadSessionEditor('${s.id}', true)" style="background-color: var(--sage-light); color: var(--sage-dark);">
+                  <i class="ti ti-eye"></i>
                 </button>
                 <button class="action-btn" title="Descargar PDF" onclick="downloadSinglePDF('${s.id}')">
                   <i class="ti ti-file-type-pdf"></i>
-                </button>
-                <button class="action-btn del" title="Eliminar" onclick="confirmDelete('${s.id}', '${s.n1}', '${s.n2}')">
-                  <i class="ti ti-trash"></i>
                 </button>
               </div>
             </td>
@@ -422,6 +416,12 @@ async function loadSessionEditor(id, isReviewOnly = false) {
   // Los campos son editables siempre que la sesión no esté finalizada/completada
   const isSessionEditable = activeSession.status !== "Finalizado" && activeSession.status !== "Completado";
   setDemographicsEditable(isSessionEditable);
+
+  // Mostrar u ocultar el botón de "Finalizar Sesión" en el Paso 4 según el estado
+  const finalizeBtn = document.getElementById("btn-finalize-session");
+  if (finalizeBtn) {
+    finalizeBtn.style.display = (!reviewMode && (activeSession.status === "Resuelto" || activeSession.status === "Respuestas Completadas")) ? "inline-block" : "none";
+  }
 
   // Cargar y renderizar preguntas dinámicas. Si es asignación inicial (Nuevo Registro), vaciar preguntas
   if (!reviewMode && activeSession.status === "Nuevo Registro") {
@@ -1156,26 +1156,109 @@ function updateShareLinks() {
 }
 
 /**
- * Abre la API de WhatsApp con el mensaje estructurado y cambia el estado de la sesión a "Cuestionario Enviado"
+ * Abre la API de WhatsApp con el mensaje estructurado y mantiene la sesión en estado "En Proceso"
  */
 async function shareViaWhatsApp() {
   const text = encodeURIComponent(document.getElementById("share-message-preview").textContent);
   const url = `https://api.whatsapp.com/send?text=${text}`;
   
-  if (currentShareSessionId) {
-    try {
-      const s = sessions.find(sess => sess.id === currentShareSessionId);
-      if (s && s.status === "En Proceso") {
-        s.status = "Cuestionario Enviado";
-        await saveSession(s, verifiedPassword);
-        sessions = await fetchAllSessions(verifiedPassword);
-        loadAdminDashboard(true);
-        showToast("Estado actualizado a Cuestionario Enviado.");
+  // El estado de la sesión se mantiene en "En Proceso" y se actualizará automáticamente 
+  // a "Resuelto" una vez que la pareja resuelva y envíe el cuestionario en línea.
+  window.open(url, '_blank');
+}
+
+// ── FUNCIONES PARA EL MODAL SELECTOR DE NUEVA SESIÓN DE PAREJA EXISTENTE ──
+
+function openNewSessionSelectorModal() {
+  const selector = document.getElementById("select-existing-couple");
+  const modal = document.getElementById("new-session-selector-modal");
+  const infoBox = document.getElementById("new-session-info-box");
+  
+  if (!selector || !modal) return;
+
+  // Limpiar selector
+  selector.innerHTML = '<option value="">-- Seleccionar Pareja --</option>';
+  if (infoBox) infoBox.style.display = "none";
+
+  // Agrupar sesiones por pareja única para encontrar la última sesión de cada una
+  const seenCouples = new Map();
+
+  sessions.forEach(s => {
+    if (!s.n1 || !s.n2) return;
+    
+    const n1Key = s.n1.toLowerCase().trim();
+    const n2Key = s.n2.toLowerCase().trim();
+    const coupleKey = [n1Key, n2Key].sort().join('|');
+    const sessionNum = parseInt(s.ns) || 1;
+
+    if (!seenCouples.has(coupleKey)) {
+      seenCouples.set(coupleKey, s);
+    } else {
+      const existing = seenCouples.get(coupleKey);
+      const existingNum = parseInt(existing.ns) || 1;
+      // Quedarse con la sesión de número más alto
+      if (sessionNum > existingNum) {
+        seenCouples.set(coupleKey, s);
       }
-    } catch (e) {
-      console.error("Error al actualizar estado en compartir WhatsApp:", e);
     }
+  });
+
+  if (seenCouples.size === 0) {
+    selector.innerHTML = '<option value="">No hay parejas registradas</option>';
+  } else {
+    seenCouples.forEach((s, key) => {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = `${s.n1} y ${s.n2} (Última: Sesión ${s.ns || 1})`;
+      selector.appendChild(opt);
+    });
   }
 
-  window.open(url, '_blank');
+  modal.style.display = "flex";
+}
+
+function updateNewSessionNumberInfo() {
+  const selector = document.getElementById("select-existing-couple");
+  const infoBox = document.getElementById("new-session-info-box");
+  const lastSessionEl = document.getElementById("info-last-session-num");
+  const nextSessionEl = document.getElementById("info-next-session-num");
+
+  if (!selector || !infoBox || !lastSessionEl || !nextSessionEl) return;
+
+  const selectedId = selector.value;
+  if (!selectedId) {
+    infoBox.style.display = "none";
+    return;
+  }
+
+  const session = sessions.find(s => s.id === selectedId);
+  if (session) {
+    const lastNs = parseInt(session.ns) || 1;
+    lastSessionEl.textContent = `Sesión ${lastNs}`;
+    nextSessionEl.textContent = lastNs + 1;
+    infoBox.style.display = "block";
+  } else {
+    infoBox.style.display = "none";
+  }
+}
+
+function submitNewSessionFromSelector() {
+  const selector = document.getElementById("select-existing-couple");
+  if (!selector || !selector.value) {
+    alert("Por favor, seleccione una pareja registrada.");
+    return;
+  }
+
+  const selectedId = selector.value;
+  closeNewSessionSelectorModal();
+  
+  // Iniciar la creación de nueva sesión consecutiva clonando los datos demográficos
+  createNewSessionFromExisting(selectedId);
+}
+
+function closeNewSessionSelectorModal() {
+  const modal = document.getElementById("new-session-selector-modal");
+  if (modal) {
+    modal.style.display = "none";
+  }
 }
