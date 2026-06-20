@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     importFile.addEventListener("change", handleImportJSON);
   }
 
-  // Actualización automática del dashboard cada 5 segundos
+  // Actualización automática del dashboard cada 30 segundos
   setInterval(() => {
     const dashboardSection = document.getElementById("dashboard-section");
     const isDashboardVisible = dashboardSection && dashboardSection.style.display === "block";
@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (isDashboardVisible && isLoggedIn) {
       loadAdminDashboard(true);
     }
-  }, 5000);
+  }, 30000);
 });
 
 /**
@@ -151,7 +151,7 @@ async function loadAdminDashboard(silent = false) {
 
   // Dividir por estados
   const pending = filtered.filter(s => s.status === "Nuevo Registro");
-  const inProcess = filtered.filter(s => s.status === "En Proceso" || s.status === "Resuelto" || s.status === "Enviado" || s.status === "Sin Respuesta" || s.status === "Respuestas Completadas" || s.status === "Pendiente" || s.status === "Programado");
+  const inProcess = filtered.filter(s => s.status === "En Proceso" || s.status === "Cuestionario Enviado" || s.status === "Resuelto" || s.status === "Enviado" || s.status === "Sin Respuesta" || s.status === "Respuestas Completadas" || s.status === "Pendiente" || s.status === "Programado");
   const completed = filtered.filter(s => s.status === "Finalizado" || s.status === "Con Respuesta" || s.status === "Completado" || !s.status);
 
   // Renderizar Fichas Pendientes
