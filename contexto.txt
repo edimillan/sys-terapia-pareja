@@ -21,106 +21,76 @@ La persistencia de datos funciona en dos modalidades automáticas:
   local si se ejecuta de forma local o sin conexión.
 
 ------------------------------------------------------------------------
-2. FLUJO DE TRABAJO Y CICLO DE VIDA DE UNA SESIÓN
+2. ESTRUCTURA DE LAS TABLAS DEL DASHBOARD (PROCESO DE 3 BANDAS)
 ------------------------------------------------------------------------
-El sistema organiza el estado clínico de las parejas a través de cuatro estados:
+El dashboard del administrador está organizado en tres bandejas diferenciadas:
 
-A. Registro Inicial ("Nuevo Registro"):
-   - La pareja ingresa a 'index.html' (sin parámetro ID en la URL).
-   - Completa el Paso 0 (Datos Generales), Paso 1 (Motivos e inquietudes) y
-     Paso 2 (Respuestas a las 5 preguntas iniciales de reflexión).
-   - Al hacer clic en "Enviar", la sesión se guarda en la base de datos con el
-     estado "Nuevo Registro", capturando la fecha/hora exacta en GMT-5.
-   - En el dashboard del administrador, aparece con etiqueta azul como "Nuevo Registro"
-     y el botón "Revisar y Asignar Primera Sesión".
+A. Bandeja de Entrada (Fichas de Ingreso Pendientes):
+   - Muestra los registros con estado "Nuevo Registro".
+   - Acciones: "Revisar" (ver datos iniciales) y "Asignar Sesión" (abre el editor).
 
-B. Asignación y Bloqueo de Datos Demográficos:
-   - El terapeuta revisa el "Nuevo Registro" y asume el control.
-   - Los datos demográficos generales llenados por la pareja quedan permanentemente bloqueados
-     como de solo lectura. Solo son editables los campos de asignación (Número de Sesión, Terapeuta, Fecha).
-   - El terapeuta completa el expediente y lo guarda como "Finalizado".
+B. Sesiones en Proceso (Seguimiento de Cuestionarios):
+   - Muestra las sesiones activas en seguimiento (cualquier estado diferente a "Nuevo Registro" y "Finalizado"/"Completado"/"Con Respuesta").
+   - Muestra dos estados visuales:
+     - "En Proceso" (Etiqueta Ámbar): Sesión asignada y en espera de respuestas.
+     - "Resuelto" (Etiqueta Verde): La pareja ya respondió el cuestionario en línea.
+   - Acciones: "Compartir" enlace por WhatsApp (no altera el estado "En Proceso" para asegurar la visibilidad), "Eliminar", y "Finalizar Sesión" (que se habilita únicamente cuando el estado cambia a "Resuelto").
 
-C. Generación de Nuevas Sesiones ("Enviado"):
-   - Para las siguientes sesiones (Sesión 2 en adelante), el terapeuta hace clic en "+"
-     en la grilla de historial de esa pareja.
-   - El sistema crea la nueva sesión (ej. ns=2), limpia las respuestas anteriores y
-     asigna por defecto el estado "Enviado".
-   - El terapeuta añade preguntas personalizadas y abre el modal de compartir. En el modal,
-     se puede escribir el correo electrónico de la pareja para enviar una invitación mailto,
-     además de las opciones habituales de WhatsApp.
-
-D. Respuesta al Enlace y Auto-rellenado ("Resuelto"):
-   - La pareja abre el enlace dinámico y ve una cabecera premium estilizada ("Cuestionario de Reflexión")
-     con los nombres de la pareja, número de sesión, terapeuta y fecha.
-   - Al contestar y hacer clic en "Enviar", el estado de la sesión cambia automáticamente a "Resuelto"
-     y registra la marca de tiempo (GMT-5).
-   - En el panel del administrador, la fila se actualiza a "Resuelto" (etiqueta verde), se ocultan los
-     botones de compartir (para evitar envíos redundantes) y queda disponible "Completar Sesión".
-
-E. Finalización ("Finalizado"):
-   - El terapeuta completa observaciones clínicas, tarea asignada, gestiona tiempos y guarda.
-   - El estado cambia a "Finalizado" y la sesión se archiva en la grilla inferior del historial clínico.
+C. Historial Clínico (Sesiones Completadas):
+   - Muestra las sesiones con estado "Finalizado", "Completado" o "Con Respuesta".
+   - Cuenta con "History Lock" para proteger la integridad del expediente: se removieron las opciones de compartir y eliminar, y el lápiz de edición fue reemplazado por un ojo de visualización (reviewMode = true).
+   - Acciones: "Nueva Sesión" (botón + para la fila específica), "Ver Sesión" (visualización de solo lectura) y "Descargar PDF".
 
 ------------------------------------------------------------------------
-3. CAMBIOS TÉCNICOS Y RESOLUCIÓN DE BUGS (ÚLTIMA ITERACIÓN)
+3. FLUJO DE TRABAJO Y CICLO DE VIDA DE UNA SESIÓN
 ------------------------------------------------------------------------
-Durante el desarrollo se identificaron y resolvieron los siguientes problemas críticos:
 
-- VALIDACIÓN DE DUPLICIDAD: Se implementó un control en el frontend (js/app_admin.js) y backend
-  (functions/api/sessions.js) que impide registrar o compartir una sesión si esa pareja (nombres
-  cruzados case-insensitive) ya tiene una sesión guardada con el mismo número (ns). Retorna 400.
-- ENTRADA DE CORREO EN COMPARTIR: Se agregó un campo `#share-email` en el modal de compartir de admin.html
-  y se integró en js/app_admin.js para componer enlaces mailto dinámicos con el correo del destinatario.
-- REGISTRO DE TIEMPO (GMT-5): Se capturan y guardan las marcas de tiempo de envío y recepción exactas
-  formateadas como "DD/MM/YYYY HH:MM hs" usando el desfase de zona horaria de Perú/Colombia/México.
-- REGLAS DE BLOQUEO: Se redefinieron los campos demográficos como permanentemente de solo lectura (readonly)
-  para el terapeuta una vez completados por la pareja, manteniendo editables las variables de asignación
-  (ns, ter, fec) y los motivos de consulta.
-- PREGUNTAS PÚBLICAS DE SOLO LECTURA: Para evitar que los pacientes alteren las preguntas clínicas preestablecidas por el terapeuta, se eliminó la posibilidad de editar el título de las preguntas o eliminarlas (se retiró el input de texto del título de pregunta, el botón de eliminar papelera, y el botón "Agregar Pregunta Libre" en index.html). Ahora los pacientes solo visualizan las preguntas fijas como texto y responden en sus textareas correspondientes.
-- BOTÓN DE LIMPIEZA DE BD: Se añadió el botón "Limpiar BD" en el panel de control (admin.html), el cual permite borrar todos los registros mediante fetch en modo online (DELETE api/sessions?id=all) o vaciando localStorage en modo offline. Cuenta con doble confirmación de seguridad.
-- BUG de Redirección (Login): Corregido 'updateShareLinks()' con un parche de rutas robusto que identifica
-  correctamente '/admin.html', '/admin' y 'file://'.
-- BUG de Caché de Navegador: Cache-Busting dinámico (`_=${Date.now()}`) para evitar que se carguen
-  versiones desactualizadas de las sesiones al refrescar el portal.
-- ESTADO PROGRAMADO: Se introdujo el estado "Programado" (etiqueta morada en el dashboard) para separar el agendamiento del completado clínico. Permite que una ficha de "Nuevo Registro" o "Resuelto" sea asignada a un terapeuta/fecha y guardada como "Programada" en la bandeja de entrada de pendientes, lista para ser completada con observaciones durante la sesión real y finalizada después. El botón de programado ahora se encuentra integrado en el Paso 4 del asistente de 5 pasos.
-- REVERSIÓN A ASISTENTE DE 5 PASOS: Se eliminó la vista compacta en dos columnas (#review-section) para revisar cuestionarios recibidos y se restauró el uso del asistente de 5 pasos (#wizard-section) que mantiene la estética y los componentes interactivos originales (taggers, escalas, etc.) del sistema.
-- CAMBIO DE NOMBRE DE PASO A "REFLEXIÓN": Se renombró la pestaña del paso de "Sesión" a "Reflexión" tanto en el formulario público como en el asistente del administrador, alineándose con la terminología clínica institucional.
-- EXPORTACIÓN PDF: La exportación en PDF de la plantilla oficial se realiza de manera integrada directamente desde el Paso 4 del asistente clínico o desde el listado de historial.
+A. Registro Inicial:
+   - La pareja ingresa a index.html sin ID en la URL, completa datos generales, motivos y 5 preguntas de ingreso. Se guarda con estado "Nuevo Registro".
+
+B. Asignación de la Primera Sesión (Paso de Entrada a Proceso):
+   - El terapeuta abre el "Nuevo Registro". Se bloquean permanentemente los datos demográficos. Las 5 preguntas de ingreso se limpian para dar paso a las preguntas de reflexión personalizadas que define el terapeuta.
+   - Al guardar, la sesión pasa al estado "En Proceso" y se traslada a la tabla de seguimiento.
+
+C. Envío de Preguntas y Persistencia:
+   - El terapeuta comparte el cuestionario personalizado a través del botón de WhatsApp. La sesión se mantiene estable en estado "En Proceso" (evitando que desaparezca de la tabla).
+   - El dashboard realiza una recarga silenciosa automática cada 30 segundos para traer las últimas actualizaciones en la base de datos.
+
+D. Respuesta de la Pareja ("Resuelto"):
+   - La pareja accede al enlace con su ID de sesión, visualiza las preguntas preparadas de solo lectura y escribe sus respuestas.
+   - Al hacer clic en enviar, el estado cambia a "Resuelto". En el dashboard del administrador, la fila cambia a color verde y se habilita el botón "Finalizar Sesión".
+
+E. Finalización y Pase al Historial:
+   - El terapeuta abre la sesión resuelta, añade las observaciones clínicas finales, la tarea para la casa, distribuye los tiempos y hace clic en el nuevo botón "Finalizar Sesión" del Paso 4.
+   - El estado cambia a "Finalizado" y pasa al historial clínico bloqueado.
+
+F. Asignación de Nueva Sesión (Sesiones Consecutivas):
+   - Opción 1: Hacer clic en el botón + en la fila de la pareja en el historial.
+   - Opción 2: Hacer clic en el botón "Nueva Sesión de Pareja Existente" en la cabecera del historial clínico. Abre un modal selector de parejas, detecta automáticamente cuál fue la última sesión y pre-configura la siguiente sesión consecutiva (ej: de Sesión 2 a Sesión 3) pre-llenando sus datos demográficos de solo lectura.
 
 ------------------------------------------------------------------------
 4. INVENTARIO DE ARCHIVOS MODIFICADOS Y SU ROL
 ------------------------------------------------------------------------
 
 * admin.html:
-  - Interfaz de usuario del Portal Clínico Administrativo. Contiene las tablas
-    de Fichas de Ingreso (Pendientes) y de Historial Clínico (Completados), el
-    wizard/editor clínico del terapeuta, y el modal para compartir enlaces.
+  - Portal Clínico del terapeuta. Contiene las 3 tablas del dashboard, el wizard/editor de 5 pasos, el modal de compartir por WhatsApp y el modal selector para nuevas sesiones consecutivas.
 
 * index.html:
-  - Interfaz del Formulario Público para Parejas. Carga el banner de bienvenida
-    dinámico y expone la vista simplificada de solo preguntas si detecta un ID.
+  - Formulario público para parejas. Muestra de forma inteligente la vista de registro inicial o la vista de respuesta de cuestionarios (si contiene parámetro ?id=... en la URL).
 
-* functions/api/sessions.js (Cloudflare Pages Functions / Backend):
-  - Procesa GET (protegido por contraseña para admin, sanitizado sin notas clínicas
-    para la vista pública de parejas).
-  - Procesa POST (guarda cambios completos de admin, o realiza merge de preguntas
-    y actualiza a "Respuestas Completadas" cuando publica la pareja).
-  - Procesa DELETE (protegido para borrado definitivo de expedientes).
+* functions/api/sessions.js:
+  - API Backend (Cloudflare Pages KV). Procesa consultas GET (sanitiza notas privadas para pacientes), peticiones POST (realiza merge automático de preguntas y actualiza a "Resuelto" cuando responde el paciente) y DELETE.
 
 * js/db.js:
-  - Controlador de base de datos híbrida local/nube. Maneja las cabeceras de
-    autorización y el control de cache-busting en las peticiones GET.
+  - Conector de persistencia híbrida local (LocalStorage) y remota (Fetch API).
 
 * js/app_admin.js:
-  - Controla la lógica de 'admin.html', la navegación del asistente, el bloqueo
-    de inputs fijos, el clonado inteligente de datos para crear nuevas sesiones, y
-    la generación de mensajes personalizados para WhatsApp y correo.
+  - Controlador de admin.html. Gestiona filtros robustos del dashboard, lógica de clonado e incremento de sesión consecutiva, validación de duplicidad de número de sesión para una misma pareja, el modal selector de parejas existentes, y el bloqueo del historial clínico.
 
 * js/app_public.js:
-  - Controla la lógica de 'index.html', el parseo de parámetros de URL, el dibujado
-    de preguntas en modo de enlace de sesión única y el envío de respuestas al backend.
+  - Controlador del portal de pacientes en index.html. Desactiva el botón de envío tras pulsarlo para evitar duplicidad de peticiones.
 
 * js/export.js:
-  - Generador de reportes PDF e integraciones para descarga física.
+  - Generador de reportes PDF e integración de descarga.
 
 ========================================================================
