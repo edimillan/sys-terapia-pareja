@@ -449,6 +449,12 @@ function toggleReviewModeUI() {
   const reviewActions = document.getElementById("review-actions");
   if (editorActions) editorActions.style.display = reviewMode ? "none" : "flex";
   if (reviewActions) reviewActions.style.display = reviewMode ? "block" : "none";
+
+  // Ocultar paso 3 (Tiempo) de la cabecera del stepper en modo revisión
+  const steps = document.querySelectorAll(".stepper .step");
+  if (steps.length > 3) {
+    steps[3].style.display = reviewMode ? "none" : "block";
+  }
 }
 
 /**
@@ -520,6 +526,16 @@ async function saveActiveSession(targetStatus = 'Finalizado') {
 function go(stepIdx) {
   syncFormToActiveSession();
 
+  // Si estamos en modo revisión, saltar el paso 3 (Tiempo)
+  if (reviewMode && stepIdx === 3) {
+    if (curStep === 2) {
+      go(4);
+    } else {
+      go(2);
+    }
+    return;
+  }
+
   if (stepIdx > curStep) {
     if (curStep === 0 && (!activeSession.n1 || !activeSession.n2)) {
       alert("Por favor, ingresen el nombre de ambos integrantes de la pareja.");
@@ -538,7 +554,14 @@ function go(stepIdx) {
     step.classList.toggle("done", i < stepIdx);
   });
   
-  const progWidth = ((stepIdx + 1) / 5 * 100);
+  let progWidth;
+  if (reviewMode) {
+    // En modo revisión hay 4 pasos visibles: 0, 1, 2 y 4 (que actúa como el 3er índice visible)
+    const visibleIdx = stepIdx === 4 ? 3 : stepIdx;
+    progWidth = ((visibleIdx + 1) / 4 * 100);
+  } else {
+    progWidth = ((stepIdx + 1) / 5 * 100);
+  }
   document.getElementById("prog").style.width = `${progWidth}%`;
   
   if (stepIdx === 4) {
