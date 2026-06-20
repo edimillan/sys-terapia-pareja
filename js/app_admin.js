@@ -555,9 +555,8 @@ async function saveActiveSession(targetStatus = 'Finalizado') {
     await saveSession(activeSession, verifiedPassword);
     
     if (targetStatus === 'En Proceso') {
-      showToast("Sesión guardada en proceso. Abriendo opciones para compartir...");
+      showToast("Sesión guardada en proceso.");
       cancelForm();
-      openShareModal(activeSession.id);
     } else if (targetStatus === 'Programado') {
       showToast("📅 Sesión programada correctamente.");
       cancelForm();
@@ -1157,66 +1156,26 @@ function updateShareLinks() {
 }
 
 /**
- * Abre la API de WhatsApp con el mensaje estructurado
+ * Abre la API de WhatsApp con el mensaje estructurado y cambia el estado de la sesión a "Cuestionario Enviado"
  */
-function shareViaWhatsApp() {
+async function shareViaWhatsApp() {
   const text = encodeURIComponent(document.getElementById("share-message-preview").textContent);
   const url = `https://api.whatsapp.com/send?text=${text}`;
-  window.open(url, '_blank');
-}
-
-/**
- * Abre el gestor de correo predeterminado (mailto) con destinatario
- */
-function shareViaEmail() {
-  const emailInput = document.getElementById("share-email");
-  const email = emailInput ? emailInput.value.trim() : "";
-  const subject = encodeURIComponent("Cuestionario de Terapia de Pareja");
-  const body = encodeURIComponent(document.getElementById("share-message-preview").textContent);
   
-  const mailUrl = `mailto:${email}?subject=${subject}&body=${body}`;
-  window.open(mailUrl, '_blank');
-}
-
-/**
- * Guardar sesión como Enviado y compartir enlace
- */
-async function saveAndShareQuestions() {
-  syncFormToActiveSession();
-  
-  if (!activeSession.n1 || !activeSession.n2) {
-    alert("Faltan completar datos demográficos obligatorios (Nombres).");
-    return;
-  }
-
-  if (checkDuplicateSession(activeSession)) {
-    alert(`⚠️ La pareja ya tiene registrada una Sesión N° ${activeSession.ns}. Por favor, asigne otro número de sesión para evitar errores.`);
-    return;
-  }
-
-  try {
-    if (!activeSession.id) {
-      activeSession.id = "session_" + Date.now();
+  if (currentShareSessionId) {
+    try {
+      const s = sessions.find(sess => sess.id === currentShareSessionId);
+      if (s && s.status === "En Proceso") {
+        s.status = "Cuestionario Enviado";
+        await saveSession(s, verifiedPassword);
+        sessions = await fetchAllSessions(verifiedPassword);
+        loadAdminDashboard(true);
+        showToast("Estado actualizado a Cuestionario Enviado.");
+      }
+    } catch (e) {
+      console.error("Error al actualizar estado en compartir WhatsApp:", e);
     }
-    
-    // Forzar estado como Enviado
-    activeSession.status = "Enviado";
-    
-    await saveSession(activeSession, verifiedPassword);
-    
-    // Recargar localmente
-    sessions = await fetchAllSessions(verifiedPassword);
-    
-    showToast("Sesión guardada en estado Enviado.");
-    
-    // Cerrar editor y volver al dashboard
-    document.getElementById("wizard-section").style.display = "none";
-    document.getElementById("dashboard-section").style.display = "block";
-    loadAdminDashboard();
-    
-    // Abrir modal de compartir
-    openShareModal(activeSession.id);
-  } catch (error) {
-    alert("Error al guardar y compartir: " + error.message);
   }
+
+  window.open(url, '_blank');
 }
