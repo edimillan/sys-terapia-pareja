@@ -329,24 +329,29 @@ async function confirmDelete(id, n1, n2) {
  * Bloquea o desbloquea los campos demográficos y número de sesión para edición
  */
 function setDemographicsEditable(editable) {
-  // Datos fijos llenados por la pareja: siempre bloqueados
+  // Datos fijos llenados por la pareja: editables si la sesión no está finalizada
   const fixedFields = ['n1', 'n2', 'a1', 'a2', 'rel', 'est', 'hij'];
   fixedFields.forEach(f => {
     const el = document.getElementById(f);
     if (el) {
-      el.setAttribute("readonly", "true");
-      if (el.tagName === "SELECT") {
-        el.setAttribute("disabled", "true");
+      if (editable) {
+        el.removeAttribute("readonly");
+        el.removeAttribute("disabled");
+      } else {
+        el.setAttribute("readonly", "true");
+        if (el.tagName === "SELECT") {
+          el.setAttribute("disabled", "true");
+        }
       }
     }
   });
 
-  // Campos de asignación de la sesión: editables si la sesión no está finalizada
+  // Campos de asignación de la sesión: editables si la sesión no está finalizada y no es revisión
   const assignFields = ['ns', 'ter', 'fec'];
   assignFields.forEach(f => {
     const el = document.getElementById(f);
     if (el) {
-      if (editable) {
+      if (editable && !reviewMode) {
         el.removeAttribute("readonly");
         el.removeAttribute("disabled");
       } else {
@@ -384,8 +389,8 @@ async function loadSessionEditor(id, isReviewOnly = false) {
     }
   });
 
-  // Los campos de asignación (ns, ter, fec) son editables siempre que la sesión no esté finalizada/completada y no sea revisión
-  const isSessionEditable = activeSession.status !== "Finalizado" && activeSession.status !== "Completado" && !reviewMode;
+  // Los campos son editables siempre que la sesión no esté finalizada/completada
+  const isSessionEditable = activeSession.status !== "Finalizado" && activeSession.status !== "Completado";
   setDemographicsEditable(isSessionEditable);
 
   // Cargar y renderizar preguntas dinámicas
